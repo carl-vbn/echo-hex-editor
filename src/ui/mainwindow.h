@@ -26,6 +26,8 @@ private:
     LeftPanel   *m_leftPanel   = nullptr;
     CenterPanel *m_centerPanel = nullptr;
     RightPanel  *m_rightPanel  = nullptr;
+    QAction     *m_undoAction  = nullptr;
+    QAction     *m_redoAction  = nullptr;
 
     void setupLayout();
     void setupMenuBar();

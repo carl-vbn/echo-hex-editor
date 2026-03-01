@@ -16,6 +16,9 @@ add_executable(hexedit
 
     src/main.cpp
 
+    src/core/document.cpp
+    src/core/document.h
+
     src/theme/theme.cpp
     src/theme/theme.h
 
@@ -25,6 +28,9 @@ add_executable(hexedit
     src/ui/titlebar.h
     src/ui/toolbar.cpp
     src/ui/toolbar.h
+
+    src/ui/hexview.cpp
+    src/ui/hexview.h
 
     src/ui/panels/leftpanel.cpp
     src/ui/panels/leftpanel.h

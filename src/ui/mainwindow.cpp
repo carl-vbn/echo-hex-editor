@@ -4,6 +4,8 @@
 #include "panels/leftpanel.h"
 #include "panels/centerpanel.h"
 #include "panels/rightpanel.h"
+#include "hexview.h"
+#include "core/document.h"
 #include "theme/theme.h"
 
 #include <QVBoxLayout>
@@ -72,6 +74,11 @@ void MainWindow::setupLayout()
     splitter->setSizes({220, 800, 220});
 
     root->addWidget(splitter, 1);
+
+    // Wire toolbar mode toggles to the hex view
+    HexView *hv = m_centerPanel->hexView();
+    connect(m_toolbar, &Toolbar::insertModeChanged, hv, &HexView::setInsertMode);
+    connect(m_toolbar, &Toolbar::directEditChanged, hv, &HexView::setDirectEdit);
 }
 
 // Menu bar
@@ -87,8 +94,28 @@ void MainWindow::setupMenuBar()
     file->addAction("Exit",     QKeySequence::Quit);
 
     auto *edit = m_menuBar->addMenu("EDIT");
-    edit->addAction("Undo", QKeySequence::Undo);
-    edit->addAction("Redo", QKeySequence::Redo);
+
+    m_undoAction = edit->addAction("Undo");
+    m_undoAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_Z));
+    m_undoAction->setEnabled(false);
+
+    m_redoAction = edit->addAction("Redo");
+    m_redoAction->setShortcuts({
+        QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_Z),
+        QKeySequence(Qt::CTRL | Qt::Key_Y),
+    });
+    m_redoAction->setEnabled(false);
+
+    // Wire to document
+    Document *doc = m_centerPanel->document();
+    connect(m_undoAction, &QAction::triggered, doc, &Document::undo);
+    connect(m_redoAction, &QAction::triggered, doc, &Document::redo);
+    connect(doc, &Document::undoAvailabilityChanged, this,
+            [this](bool canUndo, bool canRedo) {
+                m_undoAction->setEnabled(canUndo);
+                m_redoAction->setEnabled(canRedo);
+            });
+
     edit->addSeparator();
     edit->addAction("Cut",   QKeySequence::Cut);
     edit->addAction("Copy",  QKeySequence::Copy);
