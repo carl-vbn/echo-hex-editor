@@ -1,6 +1,7 @@
 #include "centerpanel.h"
 #include "ui/hexview.h"
 #include "core/document.h"
+#include "core/nodemodel.h"
 #include "theme/theme.h"
 
 #include <QVBoxLayout>
@@ -19,6 +20,12 @@ void CenterPanel::setupUi()
 
     m_document = new Document(this);
     m_document->loadData(makeTestData());
+
+    m_nodeModel = new NodeModel(this);
+    m_nodeModel->reset(m_document->size());
+
+    connect(m_document, &Document::sizeChanged,
+            m_nodeModel, &NodeModel::setRootLength);
 
     m_hexView = new HexView(this);
     m_hexView->setDocument(m_document);

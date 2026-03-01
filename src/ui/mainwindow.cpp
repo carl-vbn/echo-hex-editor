@@ -6,6 +6,7 @@
 #include "panels/rightpanel.h"
 #include "hexview.h"
 #include "core/document.h"
+#include "core/nodemodel.h"
 #include "theme/theme.h"
 
 #include <QVBoxLayout>
@@ -92,6 +93,20 @@ void MainWindow::setupLayout()
     // Wire hex view selection to the right panel
     m_rightPanel->setDocument(m_centerPanel->document());
     connect(hv, &HexView::selectionChanged, m_rightPanel, &RightPanel::onSelectionChanged);
+
+    // Wire node model to left and right panels, and hex view
+    NodeModel *nm = m_centerPanel->nodeModel();
+    m_leftPanel->setNodeModel(nm);
+    m_leftPanel->setDocument(m_centerPanel->document());
+    m_rightPanel->setNodeModel(nm);
+    hv->setNodeModel(nm);
+
+    // Auto-select+edit newly created nodes in the left panel
+    connect(nm, &NodeModel::nodeCreated, m_leftPanel, &LeftPanel::selectAndEditNode);
+
+    // Wire "Select Bytes" from left panel back to hex view
+    connect(m_leftPanel, &LeftPanel::selectBytesRequested,
+            hv, &HexView::setSelection);
 }
 
 // ---------------------------------------------------------------------------
@@ -205,6 +220,9 @@ void MainWindow::onOpen()
 
     m_currentFilePath = path;
     m_centerPanel->document()->loadData(f.readAll());
+    m_centerPanel->nodeModel()->reset(m_centerPanel->document()->size());
+    m_centerPanel->nodeModel()->renameNode(m_centerPanel->nodeModel()->root(),
+                                           QFileInfo(m_currentFilePath).fileName());
 
     m_saveAction->setEnabled(false);  // file just loaded — not yet modified
     m_closeAction->setEnabled(true);
@@ -243,6 +261,7 @@ void MainWindow::onClose()
 
     m_currentFilePath.clear();
     m_centerPanel->document()->loadData({});
+    m_centerPanel->nodeModel()->reset(m_centerPanel->document()->size());
 
     m_saveAction->setEnabled(false);
     m_closeAction->setEnabled(false);

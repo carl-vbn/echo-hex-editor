@@ -19,6 +19,11 @@ add_executable(echohexedit
     src/core/document.cpp
     src/core/document.h
 
+    src/core/node.cpp
+    src/core/node.h
+    src/core/nodemodel.cpp
+    src/core/nodemodel.h
+
     src/theme/theme.cpp
     src/theme/theme.h
 

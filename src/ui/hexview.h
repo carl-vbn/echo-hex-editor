@@ -8,6 +8,7 @@
 // time so the view is correct regardless of DPI or font substitution.
 
 class Document;
+class NodeModel;
 
 class HexView : public QAbstractScrollArea
 {
@@ -22,6 +23,7 @@ public:
     explicit HexView(QWidget *parent = nullptr);
 
     void setDocument(Document *doc);
+    void setNodeModel(NodeModel *model);
 
     // Mode toggles (connected from toolbar)
     void setDirectEdit(bool on);   // true  → typing always edits
@@ -29,6 +31,8 @@ public:
 
     qint64 selectionStart() const;
     qint64 selectionEnd()   const;
+
+    void setSelection(qint64 start, qint64 end);
 
 signals:
     void selectionChanged(qint64 start, qint64 end); // inclusive
@@ -45,7 +49,8 @@ protected:
     void focusOutEvent(QFocusEvent *event)       override;
 
 private:
-    Document *m_document = nullptr;
+    Document  *m_document  = nullptr;
+    NodeModel *m_nodeModel = nullptr;
 
     // Selection — m_selStart is the anchor, m_selEnd is the drag end.
     // Normalise with qMin/qMax for range tests.

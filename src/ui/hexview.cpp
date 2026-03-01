@@ -1,5 +1,6 @@
 #include "hexview.h"
 #include "core/document.h"
+#include "core/nodemodel.h"
 #include "theme/theme.h"
 
 #include <QPainter>
@@ -84,6 +85,32 @@ void HexView::setDirectEdit(bool on)
 void HexView::setInsertMode(bool on)
 {
     m_insertMode = on;
+}
+
+void HexView::setNodeModel(NodeModel *model)
+{
+    if (m_nodeModel)
+        disconnect(m_nodeModel, nullptr, this, nullptr);
+    m_nodeModel = model;
+    if (m_nodeModel) {
+        auto refresh = [this] { viewport()->update(); };
+        connect(m_nodeModel, &NodeModel::nodeCreated, this, refresh);
+        connect(m_nodeModel, &NodeModel::nodeRemoved, this, refresh);
+        connect(m_nodeModel, &NodeModel::nodeChanged, this, refresh);
+        connect(m_nodeModel, &NodeModel::modelReset,  this, refresh);
+    }
+    viewport()->update();
+}
+
+void HexView::setSelection(qint64 start, qint64 end)
+{
+    if (!m_document) return;
+    m_selStart = start;
+    m_selEnd   = end;
+    m_cursor   = end;
+    ensureCursorVisible();
+    viewport()->update();
+    emit selectionChanged(selectionStart(), selectionEnd());
 }
 
 qint64 HexView::selectionStart() const
@@ -595,6 +622,19 @@ void HexView::paintEvent(QPaintEvent *)
             const bool    sel = !editing && inSelection(idx);
             const bool    cur = (focused && idx == m_cursor);
 
+            // Node colour tint (base layer, shown under selection/cursor)
+            if (m_nodeModel) {
+                const QColor nc = m_nodeModel->colorAt(idx);
+                if (nc.isValid()) {
+                    const QColor tint(
+                        (nc.red()   * 35 + COL_BG.red()   * 65) / 100,
+                        (nc.green() * 35 + COL_BG.green() * 65) / 100,
+                        (nc.blue()  * 35 + COL_BG.blue()  * 65) / 100
+                    );
+                    p.fillRect(bx - 1, y, m_charW * 2 + 2, m_rowH, tint);
+                }
+            }
+
             // Background — selection suppressed in edit mode
             if (sel)
                 p.fillRect(bx - 1, y, m_charW * 2 + 2, m_rowH, COL_SEL_BG);
@@ -629,6 +669,19 @@ void HexView::paintEvent(QPaintEvent *)
             const bool    sel   = !editing && inSelection(idx);
             const bool    cur   = (focused && idx == m_cursor);
             const bool    print = (b >= 0x20 && b < 0x7F);
+
+            // Node colour tint
+            if (m_nodeModel) {
+                const QColor nc = m_nodeModel->colorAt(idx);
+                if (nc.isValid()) {
+                    const QColor tint(
+                        (nc.red()   * 35 + COL_BG.red()   * 65) / 100,
+                        (nc.green() * 35 + COL_BG.green() * 65) / 100,
+                        (nc.blue()  * 35 + COL_BG.blue()  * 65) / 100
+                    );
+                    p.fillRect(ax, y, m_charW, m_rowH, tint);
+                }
+            }
 
             if (sel)
                 p.fillRect(ax, y, m_charW, m_rowH, COL_SEL_BG);
