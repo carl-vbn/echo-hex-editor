@@ -88,6 +88,10 @@ void MainWindow::setupLayout()
     HexView *hv = m_centerPanel->hexView();
     connect(m_toolbar, &Toolbar::insertModeChanged, hv, &HexView::setInsertMode);
     connect(m_toolbar, &Toolbar::directEditChanged, hv, &HexView::setDirectEdit);
+
+    // Wire hex view selection to the right panel
+    m_rightPanel->setDocument(m_centerPanel->document());
+    connect(hv, &HexView::selectionChanged, m_rightPanel, &RightPanel::onSelectionChanged);
 }
 
 // ---------------------------------------------------------------------------
