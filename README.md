@@ -1,4 +1,4 @@
-# Modern Hex Editor
+# Echo | Modern Hex Editor
 
 A hex editor application written in C++ using Qt for user interface, with modern features and a futuristic aesthetic.
 

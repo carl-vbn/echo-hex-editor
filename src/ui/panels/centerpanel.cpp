@@ -44,7 +44,7 @@ QByteArray CenterPanel::makeTestData()
     d += QByteArray("\x40\x10\x40\x00\x00\x00\x00\x00", 8); // e_entry
 
     // ASCII text sections
-    d += "HEXEDIT TEST BUFFER\x00";
+    d += "ECHO TEST BUFFER\x00";
     d += "The quick brown fox jumps over the lazy dog.\x00";
     d += "ABCDEFGHIJKLMNOPQRSTUVWXYZ\x00";
     d += "abcdefghijklmnopqrstuvwxyz\x00";

@@ -155,7 +155,7 @@ Clean blocks can be evicted for free — their content can always be re-read fro
 
 Dirty blocks must be flushed to the temp file before eviction:
 
-1. Open `temp_file` if not already open (create in system temp directory, e.g. `/tmp/hexedit_XXXXXX`).
+1. Open `temp_file` if not already open (create in system temp directory, e.g. `/tmp/echo_XXXXXX`).
 2. Seek to end of `temp_file`.
 3. Record current position as `temp_file_offset` for this block.
 4. Write `data` buffer to `temp_file`.

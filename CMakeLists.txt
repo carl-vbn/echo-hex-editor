@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(hexedit VERSION 0.1 LANGUAGES CXX)
+project(echohexedit VERSION 0.1 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -11,8 +11,8 @@ set(CMAKE_AUTOUIC ON)
 
 find_package(Qt6 REQUIRED COMPONENTS Widgets)
 
-add_executable(hexedit
-    hexedit.qrc
+add_executable(echohexedit
+    echohexedit.qrc
 
     src/main.cpp
 
@@ -40,5 +40,5 @@ add_executable(hexedit
     src/ui/panels/rightpanel.h
 )
 
-target_link_libraries(hexedit PRIVATE Qt6::Widgets)
-target_include_directories(hexedit PRIVATE src)
+target_link_libraries(echohexedit PRIVATE Qt6::Widgets)
+target_include_directories(echohexedit PRIVATE src)
