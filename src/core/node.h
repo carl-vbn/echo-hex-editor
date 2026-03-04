@@ -11,14 +11,14 @@ class Node
 public:
     enum class Type {
         Blob,
-        U8, I8, U16, I16, U32, I32, U64, I64,
-        F32, F64
+        UInt,
+        Int,
+        Float
     };
 
     static QString     typeName(Type t);
     static QStringList allTypeNames();
     static Type        typeFromName(const QString &name);
-    static int         typeSize(Type t);   // 0 for Blob
 
     quint64            id()            const { return m_id; }
     QString            name()          const { return m_name; }

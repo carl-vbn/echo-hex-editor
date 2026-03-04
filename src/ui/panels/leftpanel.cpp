@@ -511,16 +511,16 @@ static QString interpretNodeValue(Node *node, Document *doc)
     if (!doc || !node || node->type() == Node::Type::Blob || node->isRoot())
         return {};
 
-    const int needed = Node::typeSize(node->type());
-    if (needed == 0 || node->length() < needed)
+    const int size = static_cast<int>(node->length());
+    if (size <= 0 || size > 8)
         return {};
 
-    const QByteArray bytes = doc->read(node->absoluteStart(), needed);
-    if (bytes.size() < needed) return {};
+    const QByteArray bytes = doc->read(node->absoluteStart(), size);
+    if (bytes.size() < size) return {};
 
     const bool le = node->isLittleEndian();
 
-    auto readU = [&](int size) -> quint64 {
+    auto readU = [&]() -> quint64 {
         quint64 result = 0;
         if (le) {
             for (int i = size - 1; i >= 0; --i)
@@ -533,23 +533,26 @@ static QString interpretNodeValue(Node *node, Document *doc)
     };
 
     switch (node->type()) {
-    case Node::Type::U8:  return QString::number(static_cast<quint8>(readU(1)));
-    case Node::Type::I8:  return QString::number(static_cast<qint8>(readU(1)));
-    case Node::Type::U16: return QString::number(static_cast<quint16>(readU(2)));
-    case Node::Type::I16: return QString::number(static_cast<qint16>(readU(2)));
-    case Node::Type::U32: return QString::number(static_cast<quint32>(readU(4)));
-    case Node::Type::I32: return QString::number(static_cast<qint32>(readU(4)));
-    case Node::Type::U64: return QString::number(static_cast<quint64>(readU(8)));
-    case Node::Type::I64: return QString::number(static_cast<qint64>(readU(8)));
-    case Node::Type::F32: {
-        quint32 bits = static_cast<quint32>(readU(4));
-        float f; std::memcpy(&f, &bits, sizeof f);
-        return QString::number(static_cast<double>(f), 'g', 7);
+    case Node::Type::UInt:
+        return QString::number(readU());
+    case Node::Type::Int: {
+        const quint64 raw = readU();
+        const int bits = size * 8;
+        const quint64 signBit = quint64(1) << (bits - 1);
+        const qint64 signed_ = (raw & signBit) ? static_cast<qint64>(raw | (~quint64(0) << bits)) : static_cast<qint64>(raw);
+        return QString::number(signed_);
     }
-    case Node::Type::F64: {
-        quint64 bits = readU(8);
-        double d; std::memcpy(&d, &bits, sizeof d);
-        return QString::number(d, 'g', 15);
+    case Node::Type::Float: {
+        if (size == 4) {
+            quint32 bits = static_cast<quint32>(readU());
+            float f; std::memcpy(&f, &bits, sizeof f);
+            return QString::number(static_cast<double>(f), 'g', 7);
+        } else if (size == 8) {
+            quint64 bits = readU();
+            double d; std::memcpy(&d, &bits, sizeof d);
+            return QString::number(d, 'g', 15);
+        }
+        return {};
     }
     default: return {};
     }

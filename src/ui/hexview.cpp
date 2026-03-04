@@ -622,19 +622,6 @@ void HexView::paintEvent(QPaintEvent *)
             const bool    sel = !editing && inSelection(idx);
             const bool    cur = (focused && idx == m_cursor);
 
-            // Node colour tint (base layer, shown under selection/cursor)
-            if (m_nodeModel) {
-                const QColor nc = m_nodeModel->colorAt(idx);
-                if (nc.isValid()) {
-                    const QColor tint(
-                        (nc.red()   * 35 + COL_BG.red()   * 65) / 100,
-                        (nc.green() * 35 + COL_BG.green() * 65) / 100,
-                        (nc.blue()  * 35 + COL_BG.blue()  * 65) / 100
-                    );
-                    p.fillRect(bx - 1, y, m_charW * 2 + 2, m_rowH, tint);
-                }
-            }
-
             // Background — selection suppressed in edit mode
             if (sel)
                 p.fillRect(bx - 1, y, m_charW * 2 + 2, m_rowH, COL_SEL_BG);
@@ -655,7 +642,14 @@ void HexView::paintEvent(QPaintEvent *)
                 p.drawText(bx, baseline,
                            QString::number(m_highNibble, 16).toUpper() + "_");
             } else {
-                p.setPen(sel ? COL_SEL_TEXT : (b == 0 ? COL_ZERO : COL_BYTE));
+                QColor textCol;
+                if (m_nodeModel) {
+                    const QColor nc = m_nodeModel->colorAt(idx);
+                    textCol = nc.isValid() ? nc : (sel ? COL_SEL_TEXT : (b == 0 ? COL_ZERO : COL_BYTE));
+                } else {
+                    textCol = sel ? COL_SEL_TEXT : (b == 0 ? COL_ZERO : COL_BYTE);
+                }
+                p.setPen(textCol);
                 p.drawText(bx, baseline,
                            QString("%1").arg(b, 2, 16, QLatin1Char('0')).toUpper());
             }
@@ -670,19 +664,6 @@ void HexView::paintEvent(QPaintEvent *)
             const bool    cur   = (focused && idx == m_cursor);
             const bool    print = (b >= 0x20 && b < 0x7F);
 
-            // Node colour tint
-            if (m_nodeModel) {
-                const QColor nc = m_nodeModel->colorAt(idx);
-                if (nc.isValid()) {
-                    const QColor tint(
-                        (nc.red()   * 35 + COL_BG.red()   * 65) / 100,
-                        (nc.green() * 35 + COL_BG.green() * 65) / 100,
-                        (nc.blue()  * 35 + COL_BG.blue()  * 65) / 100
-                    );
-                    p.fillRect(ax, y, m_charW, m_rowH, tint);
-                }
-            }
-
             if (sel)
                 p.fillRect(ax, y, m_charW, m_rowH, COL_SEL_BG);
             else if (cur)
@@ -695,7 +676,14 @@ void HexView::paintEvent(QPaintEvent *)
                 p.drawRect(ax, y, m_charW - 1, m_rowH - 1);
             }
 
-            p.setPen(sel ? COL_SEL_TEXT : (print ? COL_BYTE : COL_NONPRINT));
+            QColor textCol;
+            if (m_nodeModel) {
+                const QColor nc = m_nodeModel->colorAt(idx);
+                textCol = nc.isValid() ? nc : (sel ? COL_SEL_TEXT : (print ? COL_BYTE : COL_NONPRINT));
+            } else {
+                textCol = sel ? COL_SEL_TEXT : (print ? COL_BYTE : COL_NONPRINT);
+            }
+            p.setPen(textCol);
             p.drawText(ax, baseline, print ? QString(QChar(b)) : QString("\xC2\xB7"));
         }
     }

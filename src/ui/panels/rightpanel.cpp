@@ -41,7 +41,7 @@ QLabel *RightPanel::addFieldRow(QGridLayout *grid, int row, const QString &label
     k->setStyleSheet(QString("color: %1; font-size: 8pt;").arg(Theme::Color::TEXT_LABEL));
 
     auto *v = new QLabel("\xe2\x80\x94");  // em dash
-    v->setStyleSheet(QString("color: %1; font-size: 8pt;").arg(Theme::Color::TEXT_DIM));
+    v->setStyleSheet(QString("color: %1; font-size: 8pt;").arg(Theme::Color::TEXT));
     v->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
     v->setWordWrap(false);
 
