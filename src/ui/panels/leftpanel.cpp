@@ -117,7 +117,8 @@ void LeftPanel::setupUi()
     // -----------------------------------------------------------------------
 
     auto *detailsContainer = new QWidget;
-    detailsContainer->setStyleSheet("background: transparent;");
+    detailsContainer->setObjectName("detailsContainer");
+    detailsContainer->setStyleSheet("QWidget#detailsContainer { background: transparent; }");
     auto *detailsLayout = new QVBoxLayout(detailsContainer);
     detailsLayout->setContentsMargins(0, 0, 0, 0);
     detailsLayout->setSpacing(0);
@@ -125,7 +126,8 @@ void LeftPanel::setupUi()
     detailsLayout->addWidget(makePanelHeader("NODE DETAILS"));
 
     auto *fields = new QWidget;
-    fields->setStyleSheet("background: transparent;");
+    fields->setObjectName("nodeFields");
+    fields->setStyleSheet("QWidget#nodeFields { background: transparent; }");
     auto *grid = new QGridLayout(fields);
     grid->setContentsMargins(8, 8, 8, 8);
     grid->setHorizontalSpacing(10);
@@ -135,7 +137,7 @@ void LeftPanel::setupUi()
     const QString labelStyle = QString("color: %1; font-size: 8pt;")
                                    .arg(Theme::Color::TEXT_LABEL);
     const QString valueStyle = QString("color: %1; font-size: 8pt;")
-                                   .arg(Theme::Color::TEXT_DIM);
+                                   .arg(Theme::Color::TEXT);
 
     auto makeLabel = [&](const QString &text) {
         auto *l = new QLabel(text);
@@ -164,17 +166,8 @@ void LeftPanel::setupUi()
     // TYPE
     grid->addWidget(makeLabel("TYPE"), row, 0);
     m_typeCombo = new QComboBox;
+    Theme::polishComboBox(m_typeCombo);
     m_typeCombo->addItems(Node::allTypeNames());
-    m_typeCombo->setStyleSheet(QString(
-        "QComboBox { background: %1; color: %2; border: 1px solid %3;"
-        " padding: 1px 4px; font-size: 8pt; }"
-        "QComboBox::drop-down { border: none; }"
-        "QComboBox QAbstractItemView {"
-        "  background: %1; color: %2; border: 1px solid %4;"
-        "  selection-background-color: #152638; selection-color: #D8D8D8;"
-        "  outline: none; }"
-    ).arg(Theme::Color::BG_HEADER, Theme::Color::TEXT,
-          Theme::Color::BORDER, Theme::Color::BORDER_MID));
     m_typeCombo->setEnabled(false);
     connect(m_typeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, [this](int index) {
@@ -588,7 +581,7 @@ void LeftPanel::showDetails(Node *node)
 
     m_offsetLabel->setText(node->isRoot()
         ? dash
-        : QString("0x%1").arg(node->startOffset(), 0, 16).toUpper());
+        : QString("0x%1").arg(node->startOffset(), 0, 16));
 
     m_lengthLabel->setText(QString::number(node->length()) + " B");
 

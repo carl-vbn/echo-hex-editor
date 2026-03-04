@@ -1,4 +1,25 @@
 #include "theme.h"
+#include <QComboBox>
+#include <QListView>
+#include <QStyledItemDelegate>
+
+// Qt's default combo box delegate on some platforms ignores stylesheet
+// ::item padding entirely when calculating row heights. This delegate
+// extends QStyledItemDelegate (which enables stylesheet ::item pseudo-state
+// styling) and adds vertical padding to each item's size hint, since
+// stylesheet padding/min-height properties have no effect on layout.
+namespace {
+class PaddedItemDelegate : public QStyledItemDelegate {
+public:
+    using QStyledItemDelegate::QStyledItemDelegate;
+    QSize sizeHint(const QStyleOptionViewItem &option,
+                   const QModelIndex &index) const override {
+        QSize s = QStyledItemDelegate::sizeHint(option, index);
+        s.setHeight(s.height() + 8); // 4px top + 4px bottom
+        return s;
+    }
+};
+}
 
 QString Theme::appStyleSheet(const QString &fontFamily)
 {
@@ -18,7 +39,7 @@ QWidget {
     border-radius: 0px;
 }
 
-/* ── Menu bar */
+/* Menu bar */
 
 QMenuBar {
     background-color: #111111;
@@ -41,7 +62,7 @@ QMenuBar::item:pressed {
     color: #FFFFFF;
 }
 
-/* ── Drop-down menus */
+/* Menu dropdowns */
 
 QMenu {
     background-color: #0C0C0C;
@@ -66,7 +87,34 @@ QMenu::separator {
     margin: 3px 0px;
 }
 
-/* ── Splitter */
+/* Combo dropdowns */
+
+QComboBox {
+    background: #111111;
+    color: #B0B0B0;
+    border: 1px solid #282828;
+    padding: 1px 4px;
+    font-size: 8pt;
+}
+QComboBox QAbstractItemView {
+    background: #111111;
+    color: #B0B0B0;
+    border: 1px solid #282828;
+    padding: 0px;
+    outline: none;
+}
+QComboBox QAbstractItemView::item {
+    padding: 0px 8px;
+    background: #111111;
+    color: #B0B0B0;
+}
+QComboBox QAbstractItemView::item:hover,
+QComboBox QAbstractItemView::item:selected {
+    background: #1C1C1C;
+    color: #FFFFFF;
+}
+
+/* Splitter */
 
 QSplitter {
     background: #080808;
@@ -80,7 +128,7 @@ QSplitter::handle:vertical {
     background: #181818;
 }
 
-/* ── Tree widget */
+/* Tree widget */
 
 QTreeWidget {
     background-color: #0C0C0C;
@@ -103,7 +151,7 @@ QTreeWidget::item:selected {
     color: #FFFFFF;
 }
 QTreeWidget::branch {
-    background: #0C0C0C;
+    background: none;
 }
 QHeaderView {
     background: #111111;
@@ -122,7 +170,7 @@ QHeaderView::section:last {
     border-right: none;
 }
 
-/* ── Scroll bars */
+/* Scroll bars */
 
 QScrollBar:vertical {
     background: #0C0C0C;
@@ -157,7 +205,7 @@ QScrollBar::sub-line:horizontal {
     width: 0px;
 }
 
-/* ── Labels */
+/* Labels */
 
 QLabel {
     background: transparent;
@@ -165,7 +213,7 @@ QLabel {
     border: none;
 }
 
-/* ── Push buttons */
+/* Push buttons */
 
 QPushButton {
     background: transparent;
@@ -185,4 +233,28 @@ QPushButton:pressed {
 }
 
     )").arg(fontFamily);
+}
+
+// Prepares a QComboBox so its dropdown respects the app stylesheet.
+// Must be called on every combo box because Qt's default platform delegate
+// ignores stylesheet ::item rules. This function:
+//  1. Sets PaddedItemDelegate so ::item hover/selected styles work and
+//     items have proper height.
+//  2. Enables uniform item sizes so the list view lays out rows using
+//     the delegate's size hint (otherwise rows overlap).
+//  3. Styles the popup container directly to remove its default frame
+//     background, which otherwise shows as visible lines around the items.
+void Theme::polishComboBox(QComboBox *combo)
+{
+    combo->setItemDelegate(new PaddedItemDelegate(combo));
+
+    if (auto *listView = qobject_cast<QListView *>(combo->view()))
+        listView->setUniformItemSizes(true);
+
+    if (auto *container = combo->view()->parentWidget()) {
+        container->setObjectName("comboPopup");
+        container->setStyleSheet(QString(
+            "#comboPopup { background: %1; border: none; padding: 0px; }")
+            .arg(Color::BG_HEADER));
+    }
 }

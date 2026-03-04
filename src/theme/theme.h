@@ -1,6 +1,8 @@
 #pragma once
 #include <QString>
 
+class QComboBox;
+
 namespace Theme {
 
 namespace Color {
@@ -25,5 +27,6 @@ namespace Metric {
 }
 
 QString appStyleSheet(const QString &fontFamily);
+void polishComboBox(QComboBox *combo);
 
 } // namespace Theme

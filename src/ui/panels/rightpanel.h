@@ -30,8 +30,9 @@ private:
     QLabel *m_offsetLabel = nullptr;
     QLabel *m_lengthLabel = nullptr;
 
-    // Type interpretation value labels (U8 I8 U16 I16 U32 I32 U64 I64 F32 F64)
-    static constexpr int TYPE_COUNT = 10;
+    // Type interpretation labels and value labels (INT, UINT, FLOAT)
+    static constexpr int TYPE_COUNT = 3;
+    std::array<QLabel *, TYPE_COUNT> m_typeKeys{};
     std::array<QLabel *, TYPE_COUNT> m_typeValues{};
 
     qint64 m_selStart = -1;
@@ -42,4 +43,5 @@ private:
 
     static QWidget *makePanelHeader(const QString &text, QWidget *parent = nullptr);
     static QLabel  *addFieldRow(QGridLayout *grid, int row, const QString &label);
+    static std::pair<QLabel *, QLabel *> addFieldRowPair(QGridLayout *grid, int row, const QString &label);
 };

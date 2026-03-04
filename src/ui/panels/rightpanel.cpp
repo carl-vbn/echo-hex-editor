@@ -50,6 +50,21 @@ QLabel *RightPanel::addFieldRow(QGridLayout *grid, int row, const QString &label
     return v;
 }
 
+std::pair<QLabel *, QLabel *> RightPanel::addFieldRowPair(QGridLayout *grid, int row, const QString &label)
+{
+    auto *k = new QLabel(label);
+    k->setStyleSheet(QString("color: %1; font-size: 8pt;").arg(Theme::Color::TEXT_LABEL));
+
+    auto *v = new QLabel("\xe2\x80\x94");  // em dash
+    v->setStyleSheet(QString("color: %1; font-size: 8pt;").arg(Theme::Color::TEXT));
+    v->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+    v->setWordWrap(false);
+
+    grid->addWidget(k, row, 0);
+    grid->addWidget(v, row, 1);
+    return {k, v};
+}
+
 static QFrame *makeHRule(QWidget *parent = nullptr)
 {
     auto *line = new QFrame(parent);
@@ -158,15 +173,12 @@ void RightPanel::setupUi()
     typesGrid->setVerticalSpacing(5);
     typesGrid->setColumnStretch(1, 1);
 
-    const char *typeLabels[TYPE_COUNT] = {
-        "U8",  "I8",
-        "U16", "I16",
-        "U32", "I32",
-        "U64", "I64",
-        "F32", "F64",
-    };
-    for (int i = 0; i < TYPE_COUNT; ++i)
-        m_typeValues[i] = addFieldRow(typesGrid, i, typeLabels[i]);
+    const char *typeLabels[TYPE_COUNT] = { "INT", "UINT", "FLOAT" };
+    for (int i = 0; i < TYPE_COUNT; ++i) {
+        auto [k, v] = addFieldRowPair(typesGrid, i, typeLabels[i]);
+        m_typeKeys[i]   = k;
+        m_typeValues[i] = v;
+    }
 
     outerLayout->addWidget(typesWidget);
     outerLayout->addStretch();
@@ -258,73 +270,73 @@ void RightPanel::updateInterpretations()
 {
     const QString dash = "\xe2\x80\x94";  // —
 
+    // Helper to show/hide a type row
+    auto setRowVisible = [&](int idx, bool visible) {
+        m_typeKeys[idx]->setVisible(visible);
+        m_typeValues[idx]->setVisible(visible);
+    };
+
     if (m_selStart < 0 || !m_document) {
         m_offsetLabel->setText(dash);
         m_lengthLabel->setText(dash);
-        for (auto *lbl : m_typeValues) lbl->setText(dash);
+        for (int i = 0; i < TYPE_COUNT; ++i)
+            setRowVisible(i, false);
         return;
     }
 
     const qint64 len = m_selEnd - m_selStart + 1;
     m_offsetLabel->setText(QString("0x%1")
-        .arg(m_selStart, 8, 16, QLatin1Char('0')).toUpper());
+        .arg(m_selStart, 8, 16, QLatin1Char('0')));
     m_lengthLabel->setText(QString::number(len));
 
-    // Read up to 8 bytes starting at the selection anchor
-    const QByteArray bytes = m_document->read(m_selStart, qMin(len, 8LL));
-    const bool le = (m_endianGroup->checkedId() == 0);
+    const int bits = static_cast<int>(len * 8);
+    const bool intSupported   = (len >= 1 && len <= 8);
+    const bool floatSupported = (len == 4 || len == 8);
 
-    // Assemble an unsigned integer from `size` bytes respecting endianness.
-    // Returns 0 and is safe to call even if bytes.size() < size because
-    // setInt() checks the size before using the result — but readU() is
-    // evaluated eagerly as a function argument, so we guard here too.
-    auto readU = [&](int size) -> quint64 {
-        if (bytes.size() < size) return 0;
-        quint64 result = 0;
+    setRowVisible(0, intSupported);    // INT
+    setRowVisible(1, intSupported);    // UINT
+    setRowVisible(2, floatSupported);  // FLOAT
+
+    if (intSupported) {
+        m_typeKeys[0]->setText(QString("INT%1").arg(bits));
+        m_typeKeys[1]->setText(QString("UINT%1").arg(bits));
+
+        const int size = static_cast<int>(len);
+        const QByteArray bytes = m_document->read(m_selStart, size);
+        const bool le = (m_endianGroup->checkedId() == 0);
+
+        quint64 raw = 0;
         if (le) {
             for (int i = size - 1; i >= 0; --i)
-                result = (result << 8) | static_cast<uint8_t>(bytes.at(i));
+                raw = (raw << 8) | static_cast<uint8_t>(bytes.at(i));
         } else {
             for (int i = 0; i < size; ++i)
-                result = (result << 8) | static_cast<uint8_t>(bytes.at(i));
+                raw = (raw << 8) | static_cast<uint8_t>(bytes.at(i));
         }
-        return result;
-    };
 
-    // Helper: set label to formatted value if enough bytes, else dash
-    auto setInt = [&](int idx, int size, auto value) {
-        if (bytes.size() >= size)
-            m_typeValues[idx]->setText(QString::number(value));
-        else
-            m_typeValues[idx]->setText(dash);
-    };
+        // Signed integer: sign-extend from the actual size
+        qint64 signedVal = static_cast<qint64>(raw);
+        if (size < 8) {
+            const quint64 signBit = quint64(1) << (size * 8 - 1);
+            if (raw & signBit)
+                signedVal = static_cast<qint64>(raw | ~(signBit - 1));
+        }
 
-    setInt(0, 1, static_cast<quint8>(readU(1)));   // U8
-    setInt(1, 1, static_cast<qint8>(readU(1)));    // I8
-    setInt(2, 2, static_cast<quint16>(readU(2)));  // U16
-    setInt(3, 2, static_cast<qint16>(readU(2)));   // I16
-    setInt(4, 4, static_cast<quint32>(readU(4)));  // U32
-    setInt(5, 4, static_cast<qint32>(readU(4)));   // I32
-    setInt(6, 8, static_cast<quint64>(readU(8)));  // U64
-    setInt(7, 8, static_cast<qint64>(readU(8)));   // I64
+        m_typeValues[0]->setText(QString::number(signedVal));
+        m_typeValues[1]->setText(QString::number(raw));
 
-    // F32
-    if (bytes.size() >= 4) {
-        quint32 bits = static_cast<quint32>(readU(4));
-        float f;
-        std::memcpy(&f, &bits, sizeof f);
-        m_typeValues[8]->setText(QString::number(static_cast<double>(f), 'g', 7));
-    } else {
-        m_typeValues[8]->setText(dash);
-    }
-
-    // F64
-    if (bytes.size() >= 8) {
-        quint64 bits = readU(8);
-        double d;
-        std::memcpy(&d, &bits, sizeof d);
-        m_typeValues[9]->setText(QString::number(d, 'g', 15));
-    } else {
-        m_typeValues[9]->setText(dash);
+        if (floatSupported) {
+            m_typeKeys[2]->setText(QString("FLOAT%1").arg(bits));
+            if (size == 4) {
+                quint32 bits32 = static_cast<quint32>(raw);
+                float f;
+                std::memcpy(&f, &bits32, sizeof f);
+                m_typeValues[2]->setText(QString::number(static_cast<double>(f), 'g', 7));
+            } else {
+                double d;
+                std::memcpy(&d, &raw, sizeof d);
+                m_typeValues[2]->setText(QString::number(d, 'g', 15));
+            }
+        }
     }
 }

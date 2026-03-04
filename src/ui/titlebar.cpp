@@ -50,7 +50,7 @@ protected:
         // Icon
         const QColor ink = (hov || down)
             ? QColor(Theme::Color::TEXT_BRIGHT)
-            : QColor(Theme::Color::TEXT_DIM);
+            : QColor(Theme::Color::TEXT_LABEL);
 
         QPen pen(ink, 1);
         pen.setCosmetic(true);       // always 1 physical pixel regardless of DPI
