@@ -49,6 +49,7 @@ private:
     QButtonGroup *m_endianGroup    = nullptr;
     QPushButton  *m_colorBtn       = nullptr;
     QPushButton  *m_selectBytesBtn = nullptr;
+    QPushButton  *m_deleteNodeBtn  = nullptr;
     QLabel       *m_valueLabel     = nullptr;
 
     void setupUi();

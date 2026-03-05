@@ -113,6 +113,10 @@ QComboBox QAbstractItemView::item:selected {
     background: #1C1C1C;
     color: #FFFFFF;
 }
+QComboBox:disabled {
+    color: #363636;
+    border-color: #141414;
+}
 
 /* Splitter */
 

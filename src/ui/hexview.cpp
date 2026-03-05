@@ -508,7 +508,7 @@ void HexView::mousePressEvent(QMouseEvent *e)
     if (m_nodeSelectMode) {
         if (!m_nodeModel) return;
         Node *node = m_nodeModel->deepestContaining(idx, 1);
-        if (!node || node->isRoot()) return;
+        if (!node) return;
         setSelection(node->absoluteStart(),
                      node->absoluteStart() + node->length() - 1);
         emit nodeSelected(node);

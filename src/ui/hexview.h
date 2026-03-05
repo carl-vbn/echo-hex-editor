@@ -30,6 +30,7 @@ public:
     void setDirectEdit(bool on);   // true  → typing always edits
     void setInsertMode(bool on);   // true  → insert; false → overwrite
     void setNodeSelectMode(bool on);
+    bool isNodeSelectMode() const { return m_nodeSelectMode; }
 
     qint64 selectionStart() const;
     qint64 selectionEnd()   const;

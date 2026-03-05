@@ -178,7 +178,22 @@ void MainWindow::setupMenuBar()
     edit->addAction("Copy",  QKeySequence::Copy);
     edit->addAction("Paste", QKeySequence::Paste);
     edit->addSeparator();
-    edit->addAction("Select All", QKeySequence::SelectAll);
+    auto *selectAllAction = edit->addAction("Select All");
+    selectAllAction->setShortcut(QKeySequence::SelectAll);
+    connect(selectAllAction, &QAction::triggered, this, [this] {
+        HexView *hv = m_centerPanel->hexView();
+        Document *doc = m_centerPanel->document();
+        if (doc->size() <= 0) return;
+
+        if (hv->isNodeSelectMode()) {
+            Node *root = m_centerPanel->nodeModel()->root();
+            if (!root) return;
+            hv->setSelection(0, doc->size() - 1);
+            emit hv->nodeSelected(root);
+        } else {
+            hv->setSelection(0, doc->size() - 1);
+        }
+    });
 
     // -- VIEW ----------------------------------------------------------------
     auto *view = m_menuBar->addMenu("VIEW");

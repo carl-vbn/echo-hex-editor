@@ -270,20 +270,36 @@ void LeftPanel::setupUi()
 
     detailsLayout->addWidget(fields);
 
-    // SELECT BYTES button
-    m_selectBytesBtn = new QPushButton("Select Bytes");
-    m_selectBytesBtn->setFixedHeight(22);
-    m_selectBytesBtn->setEnabled(false);
-    m_selectBytesBtn->setStyleSheet(QString(R"(
+    const QString actionBtnStyle = QString(R"(
         QPushButton {
             background: transparent; color: %1;
-            border: none; font-size: 8pt;
+            border: 1px solid %2; font-size: 8pt; padding: 2px 8px;
         }
-        QPushButton:hover   { background: %2; color: %3; }
-        QPushButton:pressed { background: %4; }
+        QPushButton:hover   { background: %3; color: %4; border-color: %5; }
+        QPushButton:pressed { background: %6; }
+        QPushButton:disabled { color: %7; border-color: %7; }
     )").arg(
-        Theme::Color::TEXT_DIM, Theme::Color::BG_HOVER,
-        Theme::Color::TEXT,     Theme::Color::BG_ACTIVE));
+        Theme::Color::TEXT,       Theme::Color::BORDER_MID,
+        Theme::Color::BG_HOVER,   Theme::Color::TEXT_BRIGHT,
+        Theme::Color::TEXT_LABEL,  Theme::Color::BG_ACTIVE,
+        Theme::Color::TEXT_DIM);
+
+    const QString deleteBtnStyle = QString(R"(
+        QPushButton {
+            background: transparent; color: #C04040;
+            border: 1px solid #602020;
+            font-size: 8pt; padding: 2px 8px;
+        }
+        QPushButton:hover   { background: #301010; color: #FF5050; border-color: #803030; }
+        QPushButton:pressed { background: #401515; }
+        QPushButton:disabled { color: %1; border-color: %1; }
+    )").arg(Theme::Color::TEXT_DIM);
+
+    // SELECT BYTES button
+    m_selectBytesBtn = new QPushButton("Select Bytes");
+    m_selectBytesBtn->setFixedHeight(24);
+    m_selectBytesBtn->setEnabled(false);
+    m_selectBytesBtn->setStyleSheet(actionBtnStyle);
     connect(m_selectBytesBtn, &QPushButton::clicked, this, [this] {
         if (!m_selected) return;
         const qint64 start = m_selected->absoluteStart();
@@ -291,7 +307,25 @@ void LeftPanel::setupUi()
         emit selectBytesRequested(start, end);
     });
 
-    detailsLayout->addWidget(m_selectBytesBtn);
+    // DELETE NODE button
+    m_deleteNodeBtn = new QPushButton("Delete Node");
+    m_deleteNodeBtn->setFixedHeight(24);
+    m_deleteNodeBtn->setEnabled(false);
+    m_deleteNodeBtn->setStyleSheet(deleteBtnStyle);
+    connect(m_deleteNodeBtn, &QPushButton::clicked, this, [this] {
+        if (!m_selected || !m_nodeModel || m_selected->isRoot()) return;
+        m_nodeModel->removeNode(m_selected);
+    });
+
+    auto *btnContainer = new QWidget;
+    btnContainer->setStyleSheet("background: transparent;");
+    auto *btnLayout = new QHBoxLayout(btnContainer);
+    btnLayout->setContentsMargins(8, 4, 8, 4);
+    btnLayout->setSpacing(6);
+    btnLayout->addWidget(m_selectBytesBtn);
+    btnLayout->addWidget(m_deleteNodeBtn);
+
+    detailsLayout->addWidget(btnContainer);
     detailsLayout->addStretch();
 
     // -----------------------------------------------------------------------
@@ -581,6 +615,7 @@ void LeftPanel::showDetails(Node *node)
         m_colorBtn->setEnabled(false);
         updateColorButton();
         m_selectBytesBtn->setEnabled(false);
+        m_deleteNodeBtn->setEnabled(false);
         m_updating = false;
         return;
     }
@@ -608,6 +643,7 @@ void LeftPanel::showDetails(Node *node)
     m_colorBtn->setEnabled(true);
     updateColorButton();
     m_selectBytesBtn->setEnabled(true);
+    m_deleteNodeBtn->setEnabled(!node->isRoot());
 
     m_updating = false;
 }
