@@ -15,6 +15,8 @@ public:
     bool isNodeSelectMode() const;
     bool isParsedView()     const;
 
+    void setParsedView(bool parsed);
+
 signals:
     void insertModeChanged(bool insertMode);
     void directEditChanged(bool enabled);

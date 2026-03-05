@@ -38,10 +38,22 @@ private:
     QAction *m_undoAction   = nullptr;
     QAction *m_redoAction   = nullptr;
 
+    // VIEW menu actions
+    QAction *m_hexViewAction    = nullptr;
+    QAction *m_parsedViewAction = nullptr;
+
     QString m_currentFilePath;
 
     void setupLayout();
     void setupMenuBar();
+
+    // View switching
+    void switchToHexView();
+    void switchToParsedView();
+    void connectHexViewSignals();
+    void disconnectHexViewSignals();
+    void connectParsedViewSignals();
+    void disconnectParsedViewSignals();
 
     // File operations
     void onOpen();

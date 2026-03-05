@@ -5,6 +5,7 @@
 #include "panels/centerpanel.h"
 #include "panels/rightpanel.h"
 #include "hexview.h"
+#include "parsedview.h"
 #include "core/document.h"
 #include "core/nodemodel.h"
 #include "theme/theme.h"
@@ -90,11 +91,9 @@ void MainWindow::setupLayout()
     connect(m_toolbar, &Toolbar::insertModeChanged, hv, &HexView::setInsertMode);
     connect(m_toolbar, &Toolbar::directEditChanged, hv, &HexView::setDirectEdit);
     connect(m_toolbar, &Toolbar::nodeSelectModeChanged, hv, &HexView::setNodeSelectMode);
-    connect(hv, &HexView::nodeSelected, m_leftPanel, &LeftPanel::selectNode);
 
     // Wire hex view selection to the right panel
     m_rightPanel->setDocument(m_centerPanel->document());
-    connect(hv, &HexView::selectionChanged, m_rightPanel, &RightPanel::onSelectionChanged);
 
     // Wire node model to left and right panels, and hex view
     NodeModel *nm = m_centerPanel->nodeModel();
@@ -109,6 +108,71 @@ void MainWindow::setupLayout()
     // Wire "Select Bytes" from left panel back to hex view
     connect(m_leftPanel, &LeftPanel::selectBytesRequested,
             hv, &HexView::setSelection);
+
+    // Connect hex view signals (default active view)
+    connectHexViewSignals();
+
+    // Wire toolbar view toggle
+    connect(m_toolbar, &Toolbar::parsedViewChanged, this, [this](bool parsed) {
+        if (parsed)
+            switchToParsedView();
+        else
+            switchToHexView();
+    });
+}
+
+// ---------------------------------------------------------------------------
+// View switching
+// ---------------------------------------------------------------------------
+
+void MainWindow::connectHexViewSignals()
+{
+    HexView *hv = m_centerPanel->hexView();
+    connect(hv, &HexView::nodeSelected, m_leftPanel, &LeftPanel::selectNode);
+    connect(hv, &HexView::selectionChanged, m_rightPanel, &RightPanel::onSelectionChanged);
+}
+
+void MainWindow::disconnectHexViewSignals()
+{
+    HexView *hv = m_centerPanel->hexView();
+    disconnect(hv, &HexView::nodeSelected, m_leftPanel, &LeftPanel::selectNode);
+    disconnect(hv, &HexView::selectionChanged, m_rightPanel, &RightPanel::onSelectionChanged);
+}
+
+void MainWindow::connectParsedViewSignals()
+{
+    ParsedView *pv = m_centerPanel->parsedView();
+    if (!pv) return;
+    connect(pv, &ParsedView::nodeSelected, m_leftPanel, &LeftPanel::selectNode);
+    connect(pv, &ParsedView::selectionChanged, m_rightPanel, &RightPanel::onSelectionChanged);
+}
+
+void MainWindow::disconnectParsedViewSignals()
+{
+    ParsedView *pv = m_centerPanel->parsedView();
+    if (!pv) return;
+    disconnect(pv, &ParsedView::nodeSelected, m_leftPanel, &LeftPanel::selectNode);
+    disconnect(pv, &ParsedView::selectionChanged, m_rightPanel, &RightPanel::onSelectionChanged);
+}
+
+void MainWindow::switchToHexView()
+{
+    disconnectParsedViewSignals();
+    m_centerPanel->showHexView();
+    connectHexViewSignals();
+
+    if (m_hexViewAction) m_hexViewAction->setChecked(true);
+    if (m_parsedViewAction) m_parsedViewAction->setChecked(false);
+}
+
+void MainWindow::switchToParsedView()
+{
+    disconnectHexViewSignals();
+    m_centerPanel->showParsedView();
+    connectParsedViewSignals();
+
+    if (m_hexViewAction) m_hexViewAction->setChecked(false);
+    if (m_parsedViewAction) m_parsedViewAction->setChecked(true);
 }
 
 // ---------------------------------------------------------------------------
@@ -181,29 +245,41 @@ void MainWindow::setupMenuBar()
     auto *selectAllAction = edit->addAction("Select All");
     selectAllAction->setShortcut(QKeySequence::SelectAll);
     connect(selectAllAction, &QAction::triggered, this, [this] {
-        HexView *hv = m_centerPanel->hexView();
         Document *doc = m_centerPanel->document();
         if (doc->size() <= 0) return;
 
-        if (hv->isNodeSelectMode()) {
+        if (m_centerPanel->isParsedViewActive()) {
+            // In parsed view, select root node
             Node *root = m_centerPanel->nodeModel()->root();
             if (!root) return;
-            hv->setSelection(0, doc->size() - 1);
-            emit hv->nodeSelected(root);
+            m_centerPanel->parsedView()->setSelection(0, doc->size() - 1);
         } else {
-            hv->setSelection(0, doc->size() - 1);
+            HexView *hv = m_centerPanel->hexView();
+            if (hv->isNodeSelectMode()) {
+                Node *root = m_centerPanel->nodeModel()->root();
+                if (!root) return;
+                hv->setSelection(0, doc->size() - 1);
+                emit hv->nodeSelected(root);
+            } else {
+                hv->setSelection(0, doc->size() - 1);
+            }
         }
     });
 
     // -- VIEW ----------------------------------------------------------------
     auto *view = m_menuBar->addMenu("VIEW");
-    auto *hexViewAct    = view->addAction("Hex View");
-    auto *parsedViewAct = view->addAction("Parsed View");
-    hexViewAct->setCheckable(true);
-    parsedViewAct->setCheckable(true);
-    hexViewAct->setChecked(true);
-    (void)hexViewAct;
-    (void)parsedViewAct;
+    m_hexViewAction    = view->addAction("Hex View");
+    m_parsedViewAction = view->addAction("Parsed View");
+    m_hexViewAction->setCheckable(true);
+    m_parsedViewAction->setCheckable(true);
+    m_hexViewAction->setChecked(true);
+
+    connect(m_hexViewAction, &QAction::triggered, this, [this] {
+        m_toolbar->setParsedView(false);
+    });
+    connect(m_parsedViewAction, &QAction::triggered, this, [this] {
+        m_toolbar->setParsedView(true);
+    });
 
     // -- NODE ----------------------------------------------------------------
     auto *nodeMenu = m_menuBar->addMenu("NODE");

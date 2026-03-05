@@ -1,5 +1,6 @@
 #include "centerpanel.h"
 #include "ui/hexview.h"
+#include "ui/parsedview.h"
 #include "core/document.h"
 #include "core/nodemodel.h"
 #include "theme/theme.h"
@@ -30,6 +31,37 @@ void CenterPanel::setupUi()
     m_hexView = new HexView(this);
     m_hexView->setDocument(m_document);
     layout->addWidget(m_hexView);
+}
+
+void CenterPanel::ensureParsedView()
+{
+    if (m_parsedView) return;
+
+    m_parsedView = new ParsedView(this);
+    m_parsedView->setDocument(m_document);
+    m_parsedView->setNodeModel(m_nodeModel);
+    m_parsedView->hide();
+
+    layout()->addWidget(m_parsedView);
+}
+
+void CenterPanel::showHexView()
+{
+    if (!m_parsedViewActive) return;
+
+    m_parsedViewActive = false;
+    if (m_parsedView) m_parsedView->hide();
+    m_hexView->show();
+}
+
+void CenterPanel::showParsedView()
+{
+    if (m_parsedViewActive) return;
+
+    ensureParsedView();
+    m_parsedViewActive = true;
+    m_hexView->hide();
+    m_parsedView->show();
 }
 
 // Test data

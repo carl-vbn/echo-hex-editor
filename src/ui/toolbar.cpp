@@ -123,3 +123,10 @@ bool Toolbar::isInsertMode()     const { return m_modeGroup->checkedId() == 1; }
 bool Toolbar::isDirectEdit()     const { return m_directEdit && m_directEdit->isChecked(); }
 bool Toolbar::isNodeSelectMode() const { return m_nodeSelect && m_nodeSelect->isChecked(); }
 bool Toolbar::isParsedView()     const { return m_viewGroup->checkedId() == 1; }
+
+void Toolbar::setParsedView(bool parsed)
+{
+    auto *btn = m_viewGroup->button(parsed ? 1 : 0);
+    if (btn && !btn->isChecked())
+        btn->click();
+}
