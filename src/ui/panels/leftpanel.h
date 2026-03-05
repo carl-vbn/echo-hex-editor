@@ -23,10 +23,12 @@ public:
     void setDocument(Document *doc);
     void selectAndEditNode(Node *node);
     void selectNode(Node *node);
+    Node *selectedNode() const;
 
 signals:
     void nodeSelected(Node *node);
     void selectBytesRequested(qint64 absStart, qint64 absEnd);
+    void deleteSelectedNodeRequested();
 
 private slots:
     void onTreeSelectionChanged();

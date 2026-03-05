@@ -1,7 +1,5 @@
 #include "rightpanel.h"
 #include "core/document.h"
-#include "core/nodemodel.h"
-#include "core/node.h"
 #include "theme/theme.h"
 
 #include <QVBoxLayout>
@@ -203,25 +201,15 @@ void RightPanel::setupUi()
         Theme::Color::BG_ACTIVE
     ));
     connect(createBtn, &QPushButton::clicked, this, [this] {
-        if (m_selStart < 0 || !m_nodeModel) return;
-        Node *parent = m_nodeModel->deepestContaining(m_selStart,
-                                                       m_selEnd - m_selStart + 1);
-        if (!parent) return;
-        const qint64 relStart = m_selStart - parent->absoluteStart();
-        m_nodeModel->createNode(parent, relStart, m_selEnd - m_selStart + 1,
-                                "New node");
+        if (m_selStart < 0) return;
+        emit createNodeRequested(m_selStart, m_selEnd);
     });
     outerLayout->addWidget(createBtn);
 }
 
 // ---------------------------------------------------------------------------
-// Document / NodeModel wiring
+// Document wiring
 // ---------------------------------------------------------------------------
-
-void RightPanel::setNodeModel(NodeModel *model)
-{
-    m_nodeModel = model;
-}
 
 void RightPanel::setDocument(Document *doc)
 {

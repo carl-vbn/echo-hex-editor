@@ -310,8 +310,7 @@ void LeftPanel::setupUi()
     m_deleteNodeBtn->setEnabled(false);
     m_deleteNodeBtn->setStyleSheet(deleteBtnStyle);
     connect(m_deleteNodeBtn, &QPushButton::clicked, this, [this] {
-        if (!m_selected || !m_nodeModel || m_selected->isRoot()) return;
-        m_nodeModel->removeNode(m_selected);
+        emit deleteSelectedNodeRequested();
     });
 
     auto *btnContainer = new QWidget;
@@ -384,6 +383,11 @@ void LeftPanel::selectAndEditNode(Node *node)
     // Put focus on the name field so the user can rename immediately
     m_nameEdit->setFocus();
     m_nameEdit->selectAll();
+}
+
+Node *LeftPanel::selectedNode() const
+{
+    return m_selected;
 }
 
 void LeftPanel::selectNode(Node *node)

@@ -7,6 +7,7 @@
 #include "hexview.h"
 #include "parsedview.h"
 #include "core/document.h"
+#include "core/node.h"
 #include "core/nodemodel.h"
 #include "theme/theme.h"
 
@@ -37,6 +38,15 @@ MainWindow::MainWindow(QWidget *parent)
 
     setupLayout();
     setupMenuBar();
+
+    connect(m_createNodeAction, &QAction::triggered, this, [this] {
+        createNodeFromSelection(m_rightPanel->selectionStart(),
+                                m_rightPanel->selectionEnd());
+    });
+    connect(m_deleteNodeAction, &QAction::triggered,
+            this, &MainWindow::deleteSelectedNode);
+    connect(m_leftPanel, &LeftPanel::deleteSelectedNodeRequested,
+            this, &MainWindow::deleteSelectedNode);
 }
 
 MainWindow::~MainWindow()
@@ -95,15 +105,18 @@ void MainWindow::setupLayout()
     // Wire hex view selection to the right panel
     m_rightPanel->setDocument(m_centerPanel->document());
 
-    // Wire node model to left and right panels, and hex view
+    // Wire node model to left panel and hex view
     NodeModel *nm = m_centerPanel->nodeModel();
     m_leftPanel->setNodeModel(nm);
     m_leftPanel->setDocument(m_centerPanel->document());
-    m_rightPanel->setNodeModel(nm);
     hv->setNodeModel(nm);
 
     // Auto-select+edit newly created nodes in the left panel
     connect(nm, &NodeModel::nodeCreated, m_leftPanel, &LeftPanel::selectAndEditNode);
+
+    // Handle node creation requests from the right panel
+    connect(m_rightPanel, &RightPanel::createNodeRequested,
+            this, &MainWindow::createNodeFromSelection);
 
     // Wire "Select Bytes" from left panel back to hex view
     connect(m_leftPanel, &LeftPanel::selectBytesRequested,
@@ -283,10 +296,42 @@ void MainWindow::setupMenuBar()
 
     // -- NODE ----------------------------------------------------------------
     auto *nodeMenu = m_menuBar->addMenu("NODE");
-    nodeMenu->addAction("Create Node");
-    nodeMenu->addAction("Delete Node");
+    m_createNodeAction = nodeMenu->addAction("Create Node");
+    m_createNodeAction->setShortcut(Qt::Key_Q);
+    m_deleteNodeAction = nodeMenu->addAction("Delete Node");
+    m_deleteNodeAction->setShortcut(Qt::Key_Delete);
     nodeMenu->addSeparator();
     nodeMenu->addAction("Select Node Bytes");
+}
+
+// ---------------------------------------------------------------------------
+// Node operations
+// ---------------------------------------------------------------------------
+
+void MainWindow::createNodeFromSelection(qint64 selStart, qint64 selEnd)
+{
+    NodeModel *nm = m_centerPanel->nodeModel();
+    if (selStart < 0 || !nm) return;
+    Node *parent = m_leftPanel->selectedNode();
+    if (!parent) parent = nm->root();
+    const qint64 len = selEnd - selStart + 1;
+    const qint64 relStart = selStart - parent->absoluteStart();
+    nm->createNode(parent, relStart, len, "New node");
+}
+
+void deleteNodeRecursive(Node *node, NodeModel *nm)
+{
+    for (Node *child : node->children())
+        deleteNodeRecursive(child, nm);
+    nm->removeNode(node);
+}
+
+void MainWindow::deleteSelectedNode()
+{
+    NodeModel *nm = m_centerPanel->nodeModel();
+    Node *node = m_leftPanel->selectedNode();
+    if (!node || !nm || node->isRoot()) return;
+    deleteNodeRecursive(node, nm);
 }
 
 // ---------------------------------------------------------------------------

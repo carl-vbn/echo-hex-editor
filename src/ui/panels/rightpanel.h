@@ -6,7 +6,6 @@ class QLabel;
 class QGridLayout;
 class QButtonGroup;
 class Document;
-class NodeModel;
 
 class RightPanel : public QWidget
 {
@@ -16,14 +15,18 @@ public:
     explicit RightPanel(QWidget *parent = nullptr);
 
     void setDocument(Document *doc);
-    void setNodeModel(NodeModel *model);
+
+    qint64 selectionStart() const { return m_selStart; }
+    qint64 selectionEnd()   const { return m_selEnd; }
+
+signals:
+    void createNodeRequested(qint64 start, qint64 end);
 
 public slots:
     void onSelectionChanged(qint64 start, qint64 end);
 
 private:
     Document     *m_document    = nullptr;
-    NodeModel    *m_nodeModel   = nullptr;
     QButtonGroup *m_endianGroup = nullptr;
 
     // Selection info

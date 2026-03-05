@@ -75,12 +75,12 @@ Node *NodeModel::createNode(Node *parent, qint64 relStart, qint64 length, const 
 void NodeModel::removeNode(Node *node)
 {
     if (!node || node->isRoot()) return;
-    Node  *parent = node->parent();
-    quint64 id   = node->id();
+    Node *parent = node->parent();
+
     parent->m_children.removeOne(node);
-    delete node;
-    emit nodeRemoved(id, parent);
+    emit nodeRemoved(node->id(), parent);
     emit nodeChanged(parent);
+    delete node;
 }
 
 void NodeModel::renameNode(Node *node, const QString &name)

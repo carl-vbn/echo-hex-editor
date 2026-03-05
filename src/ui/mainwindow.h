@@ -42,6 +42,10 @@ private:
     QAction *m_hexViewAction    = nullptr;
     QAction *m_parsedViewAction = nullptr;
 
+    // NODE menu actions
+    QAction *m_createNodeAction = nullptr;
+    QAction *m_deleteNodeAction = nullptr;
+
     QString m_currentFilePath;
 
     void setupLayout();
@@ -54,6 +58,10 @@ private:
     void disconnectHexViewSignals();
     void connectParsedViewSignals();
     void disconnectParsedViewSignals();
+
+    // Node operations
+    void createNodeFromSelection(qint64 selStart, qint64 selEnd);
+    void deleteSelectedNode();
 
     // File operations
     void onOpen();
