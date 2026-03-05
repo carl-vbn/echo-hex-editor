@@ -8,6 +8,7 @@
 // time so the view is correct regardless of DPI or font substitution.
 
 class Document;
+class Node;
 class NodeModel;
 
 class HexView : public QAbstractScrollArea
@@ -28,6 +29,7 @@ public:
     // Mode toggles (connected from toolbar)
     void setDirectEdit(bool on);   // true  → typing always edits
     void setInsertMode(bool on);   // true  → insert; false → overwrite
+    void setNodeSelectMode(bool on);
 
     qint64 selectionStart() const;
     qint64 selectionEnd()   const;
@@ -36,6 +38,7 @@ public:
 
 signals:
     void selectionChanged(qint64 start, qint64 end); // inclusive
+    void nodeSelected(Node *node);
 
 protected:
     void paintEvent(QPaintEvent *event)          override;
@@ -64,6 +67,7 @@ private:
     bool   m_editActive = false;  // enter/exit via double-click or Enter
     bool   m_directEdit = false;  // if true, always edit (HxD style)
     bool   m_insertMode = false;  // insert vs overwrite
+    bool   m_nodeSelectMode = false;
 
     // Pending nibble when editing hex column (m_hexNibble == 1 → waiting for low)
     int     m_hexNibble  = 0;

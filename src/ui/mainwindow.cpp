@@ -89,6 +89,8 @@ void MainWindow::setupLayout()
     HexView *hv = m_centerPanel->hexView();
     connect(m_toolbar, &Toolbar::insertModeChanged, hv, &HexView::setInsertMode);
     connect(m_toolbar, &Toolbar::directEditChanged, hv, &HexView::setDirectEdit);
+    connect(m_toolbar, &Toolbar::nodeSelectModeChanged, hv, &HexView::setNodeSelectMode);
+    connect(hv, &HexView::nodeSelected, m_leftPanel, &LeftPanel::selectNode);
 
     // Wire hex view selection to the right panel
     m_rightPanel->setDocument(m_centerPanel->document());

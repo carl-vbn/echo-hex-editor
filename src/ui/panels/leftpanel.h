@@ -22,6 +22,7 @@ public:
     void setNodeModel(NodeModel *model);
     void setDocument(Document *doc);
     void selectAndEditNode(Node *node);
+    void selectNode(Node *node);
 
 signals:
     void nodeSelected(Node *node);

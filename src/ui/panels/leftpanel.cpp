@@ -355,6 +355,18 @@ void LeftPanel::selectAndEditNode(Node *node)
     m_nameEdit->selectAll();
 }
 
+void LeftPanel::selectNode(Node *node)
+{
+    if (!node) return;
+    QTreeWidgetItem *item = node->isRoot()
+        ? m_tree->topLevelItem(0)
+        : findItemById(node->id());
+    if (!item) return;
+
+    m_tree->setCurrentItem(item);
+    m_tree->scrollToItem(item);
+}
+
 // ---------------------------------------------------------------------------
 // Tree management
 // ---------------------------------------------------------------------------

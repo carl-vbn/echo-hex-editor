@@ -1,5 +1,6 @@
 #include "hexview.h"
 #include "core/document.h"
+#include "core/node.h"
 #include "core/nodemodel.h"
 #include "theme/theme.h"
 
@@ -85,6 +86,13 @@ void HexView::setDirectEdit(bool on)
 void HexView::setInsertMode(bool on)
 {
     m_insertMode = on;
+}
+
+void HexView::setNodeSelectMode(bool on)
+{
+    m_nodeSelectMode = on;
+    if (on) exitEditMode();
+    viewport()->update();
 }
 
 void HexView::setNodeModel(NodeModel *model)
@@ -425,7 +433,7 @@ void HexView::keyPressEvent(QKeyEvent *e)
     }
 
     // -- Editing keys --------------------------------------------------------
-    if (!isEditing()) {
+    if (m_nodeSelectMode || !isEditing()) {
         QAbstractScrollArea::keyPressEvent(e);
         return;
     }
@@ -495,8 +503,19 @@ void HexView::mousePressEvent(QMouseEvent *e)
     const qint64 idx = hitTest(e->pos(), &col);
     if (idx < 0) return;
 
-    m_dragging = true;
     setFocus();
+
+    if (m_nodeSelectMode) {
+        if (!m_nodeModel) return;
+        Node *node = m_nodeModel->deepestContaining(idx, 1);
+        if (!node || node->isRoot()) return;
+        setSelection(node->absoluteStart(),
+                     node->absoluteStart() + node->length() - 1);
+        emit nodeSelected(node);
+        return;
+    }
+
+    m_dragging = true;
 
     // Clicking a different byte exits explicit edit mode
     if (m_editActive && idx != m_cursor)
@@ -509,6 +528,7 @@ void HexView::mousePressEvent(QMouseEvent *e)
 
 void HexView::mouseMoveEvent(QMouseEvent *e)
 {
+    if (m_nodeSelectMode) return;
     if (!m_dragging || !(e->buttons() & Qt::LeftButton)) return;
     Column col = m_cursorCol;
     const qint64 idx = hitTest(e->pos(), &col);
@@ -528,6 +548,7 @@ void HexView::mouseReleaseEvent(QMouseEvent *e)
 
 void HexView::mouseDoubleClickEvent(QMouseEvent *e)
 {
+    if (m_nodeSelectMode) return;
     if (e->button() != Qt::LeftButton) return;
     Column col = Column::Hex;
     const qint64 idx = hitTest(e->pos(), &col);
