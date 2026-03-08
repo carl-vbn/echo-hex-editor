@@ -11,6 +11,8 @@
 #include "core/nodemodel.h"
 #include "theme/theme.h"
 
+#include "ext/impl/bmp/parser.h"
+
 #include <QVBoxLayout>
 #include <QSplitter>
 #include <QMenuBar>
@@ -302,6 +304,13 @@ void MainWindow::setupMenuBar()
     m_deleteNodeAction->setShortcut(Qt::Key_Delete);
     nodeMenu->addSeparator();
     nodeMenu->addAction("Select Node Bytes");
+    nodeMenu->addSeparator();
+    auto *parseMenu = nodeMenu->addMenu("Parse");
+    auto *parseBmpAction = parseMenu->addAction("BMP");
+    connect(parseBmpAction, &QAction::triggered, this, [this] {
+        BmpParser parser;
+        runParser(parser);
+    });
 }
 
 // ---------------------------------------------------------------------------
@@ -332,6 +341,28 @@ void MainWindow::deleteSelectedNode()
     Node *node = m_leftPanel->selectedNode();
     if (!node || !nm || node->isRoot()) return;
     deleteNodeRecursive(node, nm);
+}
+
+void MainWindow::runParser(Parser& parser)
+{
+    Document *doc = m_centerPanel->document();
+    if (!doc || doc->size() == 0) return;
+
+    if (!parser.checkCompatibility(*doc)) {
+        QMessageBox::warning(this, "Parse Failed",
+            QString("File does not appear to be a valid %1 file.").arg(parser.name()));
+        return;
+    }
+
+    NodeModel *parsed = parser.parse(*doc);
+    if (!parsed) {
+        QMessageBox::warning(this, "Parse Failed", 
+            QString("Failed to parse %1 file.").arg(parser.name()));
+        return;
+    }
+
+    m_centerPanel->nodeModel()->loadFrom(parsed);
+    delete parsed;
 }
 
 // ---------------------------------------------------------------------------

@@ -47,6 +47,11 @@ add_executable(echohexedit
     src/ui/panels/centerpanel.h
     src/ui/panels/rightpanel.cpp
     src/ui/panels/rightpanel.h
+
+    src/ext/parser.h
+    src/ext/parser.cpp
+    src/ext/impl/bmp/parser.h
+    src/ext/impl/bmp/parser.cpp
 )
 
 target_link_libraries(echohexedit PRIVATE Qt6::Widgets)

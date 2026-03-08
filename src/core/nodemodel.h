@@ -14,8 +14,9 @@ public:
     Node *nodeById(quint64 id) const;
 
     void   reset(qint64 fileSize);
+    void   loadFrom(NodeModel *source);
     Node  *deepestContaining(qint64 absStart, qint64 length) const;
-    Node  *createNode(Node *parent, qint64 relStart, qint64 length, const QString &name);
+    Node  *createNode(Node *parent, qint64 relStart, qint64 length, const QString &name, Node::Type type = Node::Type::Blob);
     void   removeNode(Node *node);
 
     void   renameNode(Node *node, const QString &name);

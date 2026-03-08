@@ -2,6 +2,8 @@
 #include <QWidget>
 #include <QString>
 
+#include "ext/parser.h"
+
 class TitleBar;
 class Toolbar;
 class LeftPanel;
@@ -62,6 +64,7 @@ private:
     // Node operations
     void createNodeFromSelection(qint64 selStart, qint64 selEnd);
     void deleteSelectedNode();
+    void runParser(Parser& parser);
 
     // File operations
     void onOpen();

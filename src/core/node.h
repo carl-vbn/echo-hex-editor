@@ -32,13 +32,14 @@ public:
     const QVector<Node*> &children() const { return m_children; }
     bool               isLeaf()   const { return m_children.isEmpty(); }
     bool               isRoot()   const { return m_parent == nullptr; }
+    void               addChild(Node *child);
 
     qint64             absoluteStart() const;
 
 private:
     friend class NodeModel;
 
-    Node(quint64 id, Node *parent, qint64 startOffset, qint64 length, const QString &name);
+    Node(quint64 id, Node *parent, qint64 startOffset, qint64 length, const QString &name, Type type = Type::Blob);
     ~Node();
 
     quint64       m_id;

@@ -19,6 +19,15 @@ void NodeModel::reset(qint64 fileSize)
     emit modelReset();
 }
 
+void NodeModel::loadFrom(NodeModel *source)
+{
+    delete m_root;
+    m_root = source->m_root;
+    m_nextId = source->m_nextId;
+    source->m_root = nullptr;  // prevent double-free in source's destructor
+    emit modelReset();
+}
+
 Node *NodeModel::nodeById(quint64 id) const
 {
     return m_root ? nodeByIdImpl(m_root, id) : nullptr;
@@ -57,9 +66,18 @@ Node *NodeModel::deepestContainingImpl(Node *node, qint64 absStart, qint64 absLe
     return node;
 }
 
-Node *NodeModel::createNode(Node *parent, qint64 relStart, qint64 length, const QString &name)
+Node *NodeModel::createNode(Node *parent, qint64 relStart, qint64 length, const QString &name, Node::Type type)
 {
-    Node *node = new Node(m_nextId++, parent, relStart, length, name);
+    if (!parent) {
+        if (m_root) return nullptr;  // Can't create root if one already exists
+        m_root = new Node(m_nextId++, nullptr, relStart, length, name, type);
+        m_root->m_littleEndian = true;
+        emit nodeCreated(m_root);
+        emit modelReset();
+        return m_root;
+    }
+
+    Node *node = new Node(m_nextId++, parent, relStart, length, name, type);
     node->m_littleEndian = parent->isLittleEndian();
 
     // Assign a random saturated color
