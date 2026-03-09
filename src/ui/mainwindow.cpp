@@ -422,17 +422,8 @@ void MainWindow::runParser(Parser& parser)
 // File operations
 // ---------------------------------------------------------------------------
 
-void MainWindow::onOpen()
+void MainWindow::openFile(const QString &path)
 {
-    if (!maybeSaveChanges()) return;
-
-    const QString startDir = m_currentFilePath.isEmpty()
-                             ? QDir::homePath()
-                             : QFileInfo(m_currentFilePath).absolutePath();
-
-    const QString path = QFileDialog::getOpenFileName(this, "Open File", startDir);
-    if (path.isEmpty()) return;
-
     QFile f(path);
     if (!f.open(QIODevice::ReadOnly)) {
         QMessageBox::critical(this, "Open Failed",
@@ -449,6 +440,20 @@ void MainWindow::onOpen()
     m_saveAction->setEnabled(false);  // file just loaded, not yet modified
     m_closeAction->setEnabled(true);
     updateWindowTitle();
+}
+
+void MainWindow::onOpen()
+{
+    if (!maybeSaveChanges()) return;
+
+    const QString startDir = m_currentFilePath.isEmpty()
+                             ? QDir::homePath()
+                             : QFileInfo(m_currentFilePath).absolutePath();
+
+    const QString path = QFileDialog::getOpenFileName(this, "Open File", startDir);
+    if (path.isEmpty()) return;
+
+    openFile(path);
 }
 
 void MainWindow::onSave()

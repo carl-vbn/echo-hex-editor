@@ -26,5 +26,9 @@ int main(int argc, char *argv[])
     MainWindow window;
     window.show();
 
+    const QStringList args = app.arguments();
+    if (args.size() >= 2)
+        window.openFile(args.at(1));
+
     return app.exec();
 }
