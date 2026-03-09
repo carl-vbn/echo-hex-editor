@@ -366,6 +366,16 @@ void MainWindow::createNodeFromSelection(qint64 selStart, qint64 selEnd)
     if (selStart < 0 || !nm) return;
     Node *parent = m_leftPanel->selectedNode();
     if (!parent) parent = nm->root();
+
+    // Walk up until we find an ancestor whose range contains selStart
+    while (parent && !parent->isRoot()) {
+        const qint64 start = parent->absoluteStart();
+        if (selStart >= start && selStart < start + parent->length())
+            break;
+        parent = parent->parent();
+    }
+    if (!parent) parent = nm->root();
+
     const qint64 len = selEnd - selStart + 1;
     const qint64 relStart = selStart - parent->absoluteStart();
     nm->createNode(parent, relStart, len, "New node");
