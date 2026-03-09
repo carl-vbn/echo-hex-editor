@@ -436,7 +436,7 @@ void MainWindow::onOpen()
     m_centerPanel->nodeModel()->renameNode(m_centerPanel->nodeModel()->root(),
                                            QFileInfo(m_currentFilePath).fileName());
 
-    m_saveAction->setEnabled(false);  // file just loaded — not yet modified
+    m_saveAction->setEnabled(false);  // file just loaded, not yet modified
     m_closeAction->setEnabled(true);
     updateWindowTitle();
 }
@@ -493,7 +493,8 @@ bool MainWindow::maybeSaveChanges()
     if (btn == QMessageBox::Cancel)  return false;
     if (btn == QMessageBox::Discard) return true;
 
-    // Save — if it fails or the user cancels a Save As dialog, stay put
+    // Save
+    // if it fails or the user cancels a Save As dialog, stay put
     onSave();
     return !doc->isModified();
 }

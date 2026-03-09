@@ -294,12 +294,12 @@ void HexView::handleHexKey(int hexDigit)
     if (!m_document || m_cursor < 0 || m_cursor >= m_document->size()) return;
 
     if (m_hexNibble == 0) {
-        // Received high nibble — wait for low nibble
+        // Received high nibble, wait for low nibble
         m_highNibble = static_cast<uint8_t>(hexDigit);
         m_hexNibble  = 1;
         viewport()->update();
     } else {
-        // Received low nibble — commit byte
+        // Received low nibble, commit byte
         const uint8_t value = (m_highNibble << 4) | static_cast<uint8_t>(hexDigit);
         commitHexByte(value);
         m_hexNibble = 0;
@@ -643,21 +643,24 @@ void HexView::paintEvent(QPaintEvent *)
             const bool    sel = !editing && inSelection(idx);
             const bool    cur = (focused && idx == m_cursor);
 
-            // Background — selection suppressed in edit mode
+            // Background
+            // Selection suppressed in edit mode
             if (sel)
                 p.fillRect(bx - 1, y, m_charW * 2 + 2, m_rowH, COL_SEL_BG);
             else if (cur)
                 p.fillRect(bx - 1, y, m_charW * 2 + 2, m_rowH,
                            editing ? COL_CURSOR_EDIT_BG : COL_CURSOR_BG);
 
-            // Cursor border — brighter when any form of editing is active
+            // Cursor border
+            // Brighter when any form of editing is active
             if (cur && m_cursorCol == Column::Hex) {
                 p.setPen(QPen(isEditing() ? COL_CURSOR_EDIT_BORD : COL_CURSOR_BORD, 1));
                 p.setBrush(Qt::NoBrush);
                 p.drawRect(bx - 1, y, m_charW * 2 + 1, m_rowH - 1);
             }
 
-            // Text — when waiting for low nibble, show high nibble + '_'
+            // Text
+            // When waiting for low nibble, show high nibble + '_'
             if (cur && isEditing() && m_cursorCol == Column::Hex && m_hexNibble == 1) {
                 p.setPen(COL_SEL_TEXT);
                 p.drawText(bx, baseline,

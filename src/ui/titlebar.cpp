@@ -9,8 +9,8 @@
 #include <QWindow>
 
 // WinButton
-// Custom-painted window control button. No Q_OBJECT needed — we only use
-// the clicked() signal inherited from QAbstractButton.
+// Custom-painted window control button. No Q_OBJECT needed,
+// we only use the clicked() signal inherited from QAbstractButton.
 
 class WinButton : public QAbstractButton
 {
@@ -42,7 +42,7 @@ protected:
         }
 
         QPainter p(this);
-        // Only paint a background on hover/press — otherwise let the title bar
+        // Only paint a background on hover/press, otherwise let the title bar
         // background show through so the buttons are flush with the bar.
         if (hov || down)
             p.fillRect(rect(), bg);
@@ -89,7 +89,7 @@ protected:
             break;
 
         case Type::Close:
-            // × — two diagonals through a 10×8 box
+            // cross icon: two diagonals through a 10×8 box
             p.drawLine(cx - 5, cy - 4, cx + 5, cy + 4);
             p.drawLine(cx + 5, cy - 4, cx - 5, cy + 4);
             break;
@@ -152,7 +152,7 @@ void TitleBar::toggleMaximize()
     else
         window()->showMaximized();
 
-    // Repaint the maximize button so it switches between □ and restore icon
+    // Repaint the maximize button so it switches between maximize and restore icon
     m_maximize->update();
 }
 

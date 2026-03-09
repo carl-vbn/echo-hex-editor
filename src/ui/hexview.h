@@ -56,7 +56,8 @@ private:
     Document  *m_document  = nullptr;
     NodeModel *m_nodeModel = nullptr;
 
-    // Selection — m_selStart is the anchor, m_selEnd is the drag end.
+    // Selection
+    // m_selStart is the anchor, m_selEnd is the drag end.
     // Normalise with qMin/qMax for range tests.
     qint64 m_selStart = -1;
     qint64 m_selEnd   = -1;

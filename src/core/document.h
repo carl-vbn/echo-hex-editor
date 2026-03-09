@@ -3,7 +3,7 @@
 #include <QByteArray>
 #include <QVector>
 
-// Document — the editable byte buffer.
+// Document: the editable byte buffer.
 //
 // This is the interface described in DATA_MODEL.md.  The current
 // implementation is a simple single QByteArray with an in-memory undo stack;
@@ -25,7 +25,8 @@ public:
     uint8_t    byteAt(qint64 offset)                const;
     QByteArray read(qint64 offset, qint64 length)   const;
 
-    // Write access — each call pushes one undo op.
+    // Write access
+    // Each call pushes one undo op.
     void overwrite(qint64 offset, uint8_t byte);
     void overwrite(qint64 offset, const QByteArray &data);
     void insert(qint64 offset, const QByteArray &data);

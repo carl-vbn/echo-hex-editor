@@ -110,7 +110,7 @@ void RightPanel::setupUi()
 
     m_offsetLabel = addFieldRow(selGrid, 0, "OFFSET");
     m_lengthLabel = addFieldRow(selGrid, 1, "LENGTH");
-    addFieldRow(selGrid, 2, "NODES");   // placeholder — node system not yet implemented
+    addFieldRow(selGrid, 2, "NODES");
 
     outerLayout->addWidget(selWidget);
     outerLayout->addWidget(makeHRule());
@@ -182,7 +182,7 @@ void RightPanel::setupUi()
         m_typeValues[i] = v;
     }
 
-    // Reference row — hidden until a node starts at the interpreted address
+    // Reference row (hidden until a node starts at the interpreted address)
     {
         m_refKey = new QLabel("REFERENCE");
         m_refKey->setStyleSheet(QString("color: %1; font-size: 8pt;")
@@ -301,7 +301,7 @@ void RightPanel::onSelectionChanged(qint64 start, qint64 end)
 
 void RightPanel::updateInterpretations()
 {
-    const QString dash = "\xe2\x80\x94";  // —
+    const QString dash = "\xe2\x80\x94";  // em dash
 
     // Helper to show/hide a type row
     auto setRowVisible = [&](int idx, bool visible) {
