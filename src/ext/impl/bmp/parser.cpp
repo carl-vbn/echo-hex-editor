@@ -3,7 +3,7 @@
 #include <QDebug>
 #include <QtEndian>
 
-BmpParser::BmpParser() : Parser("BMP Image") {}
+BmpParser::BmpParser() : Parser("image/bmp") {}
 
 bool BmpParser::checkCompatibility(const Document &document) const
 {

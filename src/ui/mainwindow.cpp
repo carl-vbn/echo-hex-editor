@@ -440,6 +440,20 @@ void MainWindow::openFile(const QString &path)
     m_saveAction->setEnabled(false);  // file just loaded, not yet modified
     m_closeAction->setEnabled(true);
     updateWindowTitle();
+
+    // Check all known parsers and prompt if one recognises the file
+    Document *doc = m_centerPanel->document();
+    BmpParser bmpParser;
+    Parser *parsers[] = { &bmpParser };
+    for (Parser *p : parsers) {
+        if (p->checkCompatibility(*doc)) {
+            const auto btn = QMessageBox::question(this, "Parse File",
+                QString("This file appears to be a '%1' file. Do you want to run the associated parser?").arg(p->name()));
+            if (btn == QMessageBox::Yes)
+                runParser(*p);
+            break;
+        }
+    }
 }
 
 void MainWindow::onOpen()
