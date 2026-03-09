@@ -125,6 +125,18 @@ void NodeModel::setEndian(Node *node, bool le)
     emit nodeChanged(node);
 }
 
+void NodeModel::setRefBaseNode(Node *node, quint64 baseNodeId)
+{
+    node->m_refBaseNodeId = baseNodeId;
+    emit nodeChanged(node);
+}
+
+void NodeModel::setRefConstantOffset(Node *node, qint64 offset)
+{
+    node->m_refConstantOffset = offset;
+    emit nodeChanged(node);
+}
+
 void NodeModel::setRootLength(qint64 size)
 {
     if (m_root) {

@@ -13,20 +13,23 @@ public:
         Blob,
         UInt,
         Int,
-        Float
+        Float,
+        Reference
     };
 
     static QString     typeName(Type t);
     static QStringList allTypeNames();
     static Type        typeFromName(const QString &name);
 
-    quint64            id()            const { return m_id; }
-    QString            name()          const { return m_name; }
-    qint64             startOffset()   const { return m_startOffset; }  // relative to parent
-    qint64             length()        const { return m_length; }
-    Type               type()          const { return m_type; }
-    QColor             color()         const { return m_color; }
-    bool               isLittleEndian() const { return m_littleEndian; }
+    quint64            id()               const { return m_id; }
+    QString            name()             const { return m_name; }
+    qint64             startOffset()      const { return m_startOffset; }  // relative to parent
+    qint64             length()           const { return m_length; }
+    Type               type()             const { return m_type; }
+    QColor             color()            const { return m_color; }
+    bool               isLittleEndian()   const { return m_littleEndian; }
+    quint64            refBaseNodeId()    const { return m_refBaseNodeId; }
+    qint64             refConstantOffset() const { return m_refConstantOffset; }
 
     Node              *parent()   const { return m_parent; }
     const QVector<Node*> &children() const { return m_children; }
@@ -46,9 +49,11 @@ private:
     QString       m_name;
     qint64        m_startOffset;
     qint64        m_length;
-    Type          m_type         = Type::Blob;
+    Type          m_type             = Type::Blob;
     QColor        m_color;
-    bool          m_littleEndian = true;
+    bool          m_littleEndian     = true;
+    quint64       m_refBaseNodeId    = 0;
+    qint64        m_refConstantOffset = 0;
 
     Node         *m_parent   = nullptr;
     QVector<Node*> m_children;

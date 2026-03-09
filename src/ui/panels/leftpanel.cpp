@@ -20,6 +20,8 @@
 #include <QColorDialog>
 #include <QMenu>
 #include <QContextMenuEvent>
+#include <QFormLayout>
+#include <functional>
 
 // ---------------------------------------------------------------------------
 // Panel header
@@ -267,6 +269,88 @@ void LeftPanel::setupUi()
 
     detailsLayout->addWidget(fields);
 
+    // -----------------------------------------------------------------------
+    // Reference-type extra fields (hidden by default)
+    // -----------------------------------------------------------------------
+    m_refWidget = new QWidget;
+    m_refWidget->setObjectName("refWidget");
+    m_refWidget->setStyleSheet("QWidget#refWidget { background: transparent; }");
+    m_refWidget->hide();
+
+    auto *refLayout = new QFormLayout(m_refWidget);
+    refLayout->setContentsMargins(8, 0, 8, 4);
+    refLayout->setSpacing(6);
+    refLayout->setLabelAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+
+    auto makeRefLabel = [&](const QString &text) {
+        auto *l = new QLabel(text);
+        l->setStyleSheet(labelStyle);
+        return l;
+    };
+
+    m_refBaseCombo = new QComboBox;
+    Theme::polishComboBox(m_refBaseCombo);
+    connect(m_refBaseCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, [this](int index) {
+        if (m_updating || !m_selected || !m_nodeModel) return;
+        const quint64 id = m_refBaseCombo->itemData(index).toULongLong();
+        m_nodeModel->setRefBaseNode(m_selected, id);
+    });
+
+    m_refOffsetEdit = new QLineEdit;
+    m_refOffsetEdit->setPlaceholderText("0");
+    m_refOffsetEdit->setStyleSheet(QString(
+        "QLineEdit { background: %1; color: %2; border: 1px solid %3;"
+        " padding: 1px 4px; font-size: 8pt; }"
+    ).arg(Theme::Color::BG_HEADER, Theme::Color::TEXT, Theme::Color::BORDER));
+    connect(m_refOffsetEdit, &QLineEdit::editingFinished, this, [this] {
+        if (m_updating || !m_selected || !m_nodeModel) return;
+        bool ok;
+        const QString text = m_refOffsetEdit->text().trimmed();
+        const qint64 offset = text.isEmpty() ? 0 : text.toLongLong(&ok, 0);
+        if (!text.isEmpty() && !ok) return;
+        m_nodeModel->setRefConstantOffset(m_selected, offset);
+    });
+
+    m_refRelLabel = new QLabel("\xe2\x80\x94");
+    m_refRelLabel->setStyleSheet(valueStyle);
+    m_refRelLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+
+    m_refAbsLabel = new QLabel("\xe2\x80\x94");
+    m_refAbsLabel->setStyleSheet(valueStyle);
+    m_refAbsLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+    m_refAbsLabel->setTextFormat(Qt::RichText);
+    m_refAbsLabel->setTextInteractionFlags(Qt::TextBrowserInteraction);
+    m_refAbsLabel->setOpenExternalLinks(false);
+    connect(m_refAbsLabel, &QLabel::linkActivated, this, [this](const QString &) {
+        if (!m_selected || !m_document || !m_nodeModel) return;
+        const RefInfo info = resolveNodeReference(m_selected, m_document, m_nodeModel);
+        if (info.valid) emit followReferenceRequested(info.absolute);
+    });
+
+    m_refNodeLabel = new QLabel;
+    m_refNodeLabel->setStyleSheet(valueStyle);
+    m_refNodeLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+    m_refNodeLabel->setTextFormat(Qt::RichText);
+    m_refNodeLabel->setTextInteractionFlags(Qt::TextBrowserInteraction);
+    m_refNodeLabel->setOpenExternalLinks(false);
+    m_refNodeLabel->hide();
+    connect(m_refNodeLabel, &QLabel::linkActivated, this, [this](const QString &) {
+        if (!m_selected || !m_document || !m_nodeModel) return;
+        const RefInfo info = resolveNodeReference(m_selected, m_document, m_nodeModel);
+        if (info.valid) emit followReferenceRequested(info.absolute);
+    });
+
+    refLayout->addRow(makeRefLabel("BASE NODE"),    m_refBaseCombo);
+    refLayout->addRow(makeRefLabel("CONST OFFSET"), m_refOffsetEdit);
+    refLayout->addRow(makeRefLabel("RELATIVE"),     m_refRelLabel);
+    refLayout->addRow(makeRefLabel("ABSOLUTE"),     m_refAbsLabel);
+    m_refNodeRowLabel = makeRefLabel("REFERENCED NODE");
+    m_refNodeRowLabel->hide();
+    refLayout->addRow(m_refNodeRowLabel, m_refNodeLabel);
+
+    detailsLayout->addWidget(m_refWidget);
+
     const QString actionBtnStyle = QString(R"(
         QPushButton {
             background: transparent; color: %1;
@@ -364,6 +448,7 @@ void LeftPanel::setDocument(Document *doc)
             if (m_selected) {
                 const QString val = interpretNodeValue(m_selected, m_document);
                 m_valueLabel->setText(val.isEmpty() ? "\xe2\x80\x94" : val);
+                updateRefDisplay();
             }
         });
     }
@@ -546,6 +631,13 @@ void LeftPanel::onTreeSelectionChanged()
 // Details pane
 // ---------------------------------------------------------------------------
 
+static void collectAllNodes(Node *node, QVector<Node*> &out)
+{
+    out.append(node);
+    for (Node *child : node->children())
+        collectAllNodes(child, out);
+}
+
 void LeftPanel::showDetails(Node *node)
 {
     m_updating = true;
@@ -565,6 +657,7 @@ void LeftPanel::showDetails(Node *node)
         updateColorButton();
         m_selectBytesBtn->setEnabled(false);
         m_deleteNodeBtn->setEnabled(false);
+        m_refWidget->hide();
         m_updating = false;
         return;
     }
@@ -594,7 +687,86 @@ void LeftPanel::showDetails(Node *node)
     m_selectBytesBtn->setEnabled(true);
     m_deleteNodeBtn->setEnabled(!node->isRoot());
 
+    // Reference-specific section
+    const bool isRef = (node->isLeaf() && node->type() == Node::Type::Reference);
+    m_refWidget->setVisible(isRef);
+    if (isRef && m_nodeModel) {
+        // Populate base node combo
+        m_refBaseCombo->clear();
+        QVector<Node*> allNodes;
+        if (m_nodeModel->root())
+            collectAllNodes(m_nodeModel->root(), allNodes);
+        for (Node *n : allNodes)
+            m_refBaseCombo->addItem(n->name(), QVariant::fromValue(n->id()));
+
+        // Select current base node (default to root if not found)
+        const quint64 baseId = node->refBaseNodeId();
+        int idx = m_refBaseCombo->findData(QVariant::fromValue(baseId));
+        m_refBaseCombo->setCurrentIndex(idx >= 0 ? idx : 0);
+
+        // Constant offset
+        const qint64 constOff = node->refConstantOffset();
+        m_refOffsetEdit->setText(constOff != 0 ? QString::number(constOff) : QString());
+
+        updateRefDisplay();
+    }
+
     m_updating = false;
+}
+
+void LeftPanel::updateRefDisplay()
+{
+    if (!m_selected || m_selected->type() != Node::Type::Reference) return;
+
+    const RefInfo info = resolveNodeReference(m_selected, m_document, m_nodeModel);
+    const QString dash = "\xe2\x80\x94";
+
+    auto nodeColorOrDefault = [](const QColor &c) -> QString {
+        return c.isValid() ? c.name() : Theme::Color::TEXT;
+    };
+    auto linkHtml = [](const QString &href, const QString &color, const QString &text) {
+        return QString("<a href='%1' style='color: %2; text-decoration: underline;'>%3</a>")
+            .arg(href, color, text);
+    };
+
+    if (info.valid) {
+        const QString absHex = QString("0x%1").arg(info.absolute, 0, 16);
+        const QString relHex = QString("0x%1").arg(info.relative, 0, 16);
+
+        // Color absolute link by deepest node covering that address (or default)
+        const QColor absColor = m_nodeModel ? m_nodeModel->colorAt(info.absolute) : QColor();
+        m_refAbsLabel->setText(linkHtml("#", nodeColorOrDefault(absColor), absHex));
+        m_refRelLabel->setText(relHex);
+
+        // Find shallowest node starting exactly at the resolved address
+        Node *target = nullptr;
+        if (m_nodeModel && m_nodeModel->root()) {
+            std::function<Node*(Node*)> find = [&](Node *node) -> Node* {
+                for (Node *child : node->children()) {
+                    if (child->absoluteStart() == info.absolute) return child;
+                    Node *found = find(child);
+                    if (found) return found;
+                }
+                return nullptr;
+            };
+            target = find(m_nodeModel->root());
+        }
+
+        if (target) {
+            m_refNodeLabel->setText(linkHtml(
+                "#", nodeColorOrDefault(target->color()), target->name().toHtmlEscaped()));
+            m_refNodeLabel->show();
+            m_refNodeRowLabel->show();
+        } else {
+            m_refNodeLabel->hide();
+            m_refNodeRowLabel->hide();
+        }
+    } else {
+        m_refAbsLabel->setText(dash);
+        m_refRelLabel->setText(dash);
+        m_refNodeLabel->hide();
+        m_refNodeRowLabel->hide();
+    }
 }
 
 void LeftPanel::updateColorButton()

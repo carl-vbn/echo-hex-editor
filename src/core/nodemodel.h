@@ -24,6 +24,8 @@ public:
     void   recolorNode(Node *node, const QColor &color);
     void   setEndian(Node *node, bool le);
     void   setRootLength(qint64 size);
+    void   setRefBaseNode(Node *node, quint64 baseNodeId);
+    void   setRefConstantOffset(Node *node, qint64 offset);
 
     // Returns the color of the deepest non-root node covering absOffset that
     // has a color set; invalid QColor if none.

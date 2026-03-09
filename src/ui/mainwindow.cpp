@@ -13,6 +13,8 @@
 
 #include "ext/impl/bmp/parser.h"
 
+#include <functional>
+
 #include <QVBoxLayout>
 #include <QSplitter>
 #include <QMenuBar>
@@ -107,10 +109,11 @@ void MainWindow::setupLayout()
     // Wire hex view selection to the right panel
     m_rightPanel->setDocument(m_centerPanel->document());
 
-    // Wire node model to left panel and hex view
+    // Wire node model to left panel, right panel, and hex view
     NodeModel *nm = m_centerPanel->nodeModel();
     m_leftPanel->setNodeModel(nm);
     m_leftPanel->setDocument(m_centerPanel->document());
+    m_rightPanel->setNodeModel(nm);
     hv->setNodeModel(nm);
 
     // Auto-select+edit newly created nodes in the left panel
@@ -123,6 +126,46 @@ void MainWindow::setupLayout()
     // Wire "Select Bytes" from left panel back to hex view
     connect(m_leftPanel, &LeftPanel::selectBytesRequested,
             hv, &HexView::setSelection);
+
+    // Navigate to node by ID (from right panel reference link)
+    connect(m_rightPanel, &RightPanel::navigateToNodeRequested,
+            this, [this](quint64 nodeId) {
+        NodeModel *nm = m_centerPanel->nodeModel();
+        HexView   *hv = m_centerPanel->hexView();
+        if (!nm || !hv) return;
+        Node *node = nm->nodeById(nodeId);
+        if (!node) return;
+        m_leftPanel->selectNode(node);
+        hv->setSelection(node->absoluteStart(), node->absoluteStart() + node->length() - 1);
+    });
+
+    // Follow Reference: select target node (or byte) in tree + hex view
+    connect(m_leftPanel, &LeftPanel::followReferenceRequested,
+            this, [this](qint64 absOffset) {
+        NodeModel *nm = m_centerPanel->nodeModel();
+        HexView   *hv = m_centerPanel->hexView();
+        if (!nm || !hv) return;
+
+        // Find the shallowest node that starts exactly at absOffset
+        std::function<Node*(Node*)> findStarting = [&](Node *node) -> Node* {
+            for (Node *child : node->children()) {
+                if (child->absoluteStart() == absOffset)
+                    return child;
+                Node *found = findStarting(child);
+                if (found) return found;
+            }
+            return nullptr;
+        };
+
+        Node *target = nm->root() ? findStarting(nm->root()) : nullptr;
+        if (target) {
+            m_leftPanel->selectNode(target);
+            hv->setSelection(target->absoluteStart(),
+                             target->absoluteStart() + target->length() - 1);
+        } else {
+            hv->setSelection(absOffset, absOffset);
+        }
+    });
 
     // Connect hex view signals (default active view)
     connectHexViewSignals();

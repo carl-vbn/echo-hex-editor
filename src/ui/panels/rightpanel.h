@@ -6,6 +6,7 @@ class QLabel;
 class QGridLayout;
 class QButtonGroup;
 class Document;
+class NodeModel;
 
 class RightPanel : public QWidget
 {
@@ -15,18 +16,21 @@ public:
     explicit RightPanel(QWidget *parent = nullptr);
 
     void setDocument(Document *doc);
+    void setNodeModel(NodeModel *model);
 
     qint64 selectionStart() const { return m_selStart; }
     qint64 selectionEnd()   const { return m_selEnd; }
 
 signals:
     void createNodeRequested(qint64 start, qint64 end);
+    void navigateToNodeRequested(quint64 nodeId);
 
 public slots:
     void onSelectionChanged(qint64 start, qint64 end);
 
 private:
     Document     *m_document    = nullptr;
+    NodeModel    *m_nodeModel   = nullptr;
     QButtonGroup *m_endianGroup = nullptr;
 
     // Selection info
@@ -37,6 +41,10 @@ private:
     static constexpr int TYPE_COUNT = 3;
     std::array<QLabel *, TYPE_COUNT> m_typeKeys{};
     std::array<QLabel *, TYPE_COUNT> m_typeValues{};
+
+    // Reference row (shown only when a node starts at the interpreted address)
+    QLabel *m_refKey   = nullptr;
+    QLabel *m_refValue = nullptr;
 
     qint64 m_selStart = -1;
     qint64 m_selEnd   = -1;

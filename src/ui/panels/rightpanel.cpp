@@ -1,6 +1,10 @@
 #include "rightpanel.h"
 #include "core/document.h"
+#include "core/node.h"
+#include "core/nodemodel.h"
 #include "theme/theme.h"
+
+#include <functional>
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -178,6 +182,30 @@ void RightPanel::setupUi()
         m_typeValues[i] = v;
     }
 
+    // Reference row — hidden until a node starts at the interpreted address
+    {
+        m_refKey = new QLabel("REFERENCE");
+        m_refKey->setStyleSheet(QString("color: %1; font-size: 8pt;")
+            .arg(Theme::Color::TEXT_LABEL));
+        m_refKey->hide();
+
+        m_refValue = new QLabel;
+        m_refValue->setStyleSheet(QString("font-size: 8pt;"));
+        m_refValue->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+        m_refValue->setTextFormat(Qt::RichText);
+        m_refValue->setTextInteractionFlags(Qt::TextBrowserInteraction);
+        m_refValue->setOpenExternalLinks(false);
+        m_refValue->hide();
+        connect(m_refValue, &QLabel::linkActivated, this, [this](const QString &href) {
+            bool ok;
+            const quint64 id = href.toULongLong(&ok);
+            if (ok) emit navigateToNodeRequested(id);
+        });
+
+        typesGrid->addWidget(m_refKey,   TYPE_COUNT, 0);
+        typesGrid->addWidget(m_refValue, TYPE_COUNT, 1);
+    }
+
     outerLayout->addWidget(typesWidget);
     outerLayout->addStretch();
     outerLayout->addWidget(makeHRule());
@@ -210,6 +238,23 @@ void RightPanel::setupUi()
 // ---------------------------------------------------------------------------
 // Document wiring
 // ---------------------------------------------------------------------------
+
+void RightPanel::setNodeModel(NodeModel *model)
+{
+    if (m_nodeModel)
+        disconnect(m_nodeModel, nullptr, this, nullptr);
+
+    m_nodeModel = model;
+
+    if (m_nodeModel) {
+        connect(m_nodeModel, &NodeModel::nodeCreated, this, [this](Node *) { updateInterpretations(); });
+        connect(m_nodeModel, &NodeModel::nodeRemoved, this, [this](quint64, Node *) { updateInterpretations(); });
+        connect(m_nodeModel, &NodeModel::nodeChanged, this, [this](Node *) { updateInterpretations(); });
+        connect(m_nodeModel, &NodeModel::modelReset,  this, [this]() { updateInterpretations(); });
+    }
+
+    updateInterpretations();
+}
 
 void RightPanel::setDocument(Document *doc)
 {
@@ -264,11 +309,17 @@ void RightPanel::updateInterpretations()
         m_typeValues[idx]->setVisible(visible);
     };
 
+    auto setRefVisible = [&](bool visible) {
+        m_refKey->setVisible(visible);
+        m_refValue->setVisible(visible);
+    };
+
     if (m_selStart < 0 || !m_document) {
         m_offsetLabel->setText(dash);
         m_lengthLabel->setText(dash);
         for (int i = 0; i < TYPE_COUNT; ++i)
             setRowVisible(i, false);
+        setRefVisible(false);
         return;
     }
 
@@ -284,6 +335,7 @@ void RightPanel::updateInterpretations()
     setRowVisible(0, intSupported);    // INT
     setRowVisible(1, intSupported);    // UINT
     setRowVisible(2, floatSupported);  // FLOAT
+    if (!intSupported) setRefVisible(false);
 
     if (intSupported) {
         m_typeKeys[0]->setText(QString("INT%1").arg(bits));
@@ -312,6 +364,33 @@ void RightPanel::updateInterpretations()
 
         m_typeValues[0]->setText(QString::number(signedVal));
         m_typeValues[1]->setText(QString::number(raw));
+
+        // Reference: treat raw as an absolute file offset, find a node starting there
+        Node *refTarget = nullptr;
+        if (m_nodeModel && m_nodeModel->root() && raw < static_cast<quint64>(m_document->size())) {
+            const qint64 targetOffset = static_cast<qint64>(raw);
+            std::function<Node*(Node*)> findStarting = [&](Node *node) -> Node* {
+                for (Node *child : node->children()) {
+                    if (child->absoluteStart() == targetOffset) return child;
+                    Node *found = findStarting(child);
+                    if (found) return found;
+                }
+                return nullptr;
+            };
+            refTarget = findStarting(m_nodeModel->root());
+        }
+        if (refTarget) {
+            const QColor nodeColor = refTarget->color();
+            const QString linkColor = nodeColor.isValid() ? nodeColor.name() : Theme::Color::TEXT;
+            m_refValue->setText(
+                QString("<a href='%1' style='color: %2; text-decoration: underline;'>%3</a>")
+                    .arg(refTarget->id())
+                    .arg(linkColor)
+                    .arg(refTarget->name().toHtmlEscaped()));
+            setRefVisible(true);
+        } else {
+            setRefVisible(false);
+        }
 
         if (floatSupported) {
             m_typeKeys[2]->setText(QString("FLOAT%1").arg(bits));

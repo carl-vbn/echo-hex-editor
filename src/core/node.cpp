@@ -22,21 +22,23 @@ QString Node::typeName(Type t)
     case Type::Blob:  return "Blob";
     case Type::UInt:  return "UInt";
     case Type::Int:   return "Int";
-    case Type::Float: return "Float";
+    case Type::Float:     return "Float";
+    case Type::Reference: return "Reference";
     }
     return {};
 }
 
 QStringList Node::allTypeNames()
 {
-    return { "Blob", "UInt", "Int", "Float" };
+    return { "Blob", "UInt", "Int", "Float", "Reference" };
 }
 
 Node::Type Node::typeFromName(const QString &name)
 {
-    if (name == "UInt")  return Type::UInt;
-    if (name == "Int")   return Type::Int;
-    if (name == "Float") return Type::Float;
+    if (name == "UInt")      return Type::UInt;
+    if (name == "Int")       return Type::Int;
+    if (name == "Float")     return Type::Float;
+    if (name == "Reference") return Type::Reference;
     return Type::Blob;
 }
 

@@ -1,6 +1,7 @@
 #include "nodeutil.h"
 #include "node.h"
 #include "document.h"
+#include "nodemodel.h"
 
 #include <cstring>  // memcpy
 
@@ -31,6 +32,11 @@ QString interpretNodeValue(Node *node, Document *doc)
     };
 
     switch (node->type()) {
+    case Node::Type::Reference: {
+        // Show stored integer as zero-padded hex
+        const quint64 val = readU();
+        return QString("0x%1").arg(val, size * 2, 16, QChar('0'));
+    }
     case Node::Type::UInt:
         return QString::number(readU());
     case Node::Type::Int: {
@@ -121,4 +127,38 @@ bool writeNodeValue(Node *node, Document *doc, const QString &text)
 
     doc->overwrite(node->absoluteStart(), bytes);
     return true;
+}
+
+RefInfo resolveNodeReference(Node *node, Document *doc, NodeModel *model)
+{
+    if (!node || !doc || !model || node->type() != Node::Type::Reference)
+        return {};
+
+    const int size = static_cast<int>(node->length());
+    if (size <= 0 || size > 8) return {};
+
+    const QByteArray bytes = doc->read(node->absoluteStart(), size);
+    if (bytes.size() < size) return {};
+
+    const bool le = node->isLittleEndian();
+    quint64 stored = 0;
+    if (le) {
+        for (int i = size - 1; i >= 0; --i)
+            stored = (stored << 8) | static_cast<uint8_t>(bytes.at(i));
+    } else {
+        for (int i = 0; i < size; ++i)
+            stored = (stored << 8) | static_cast<uint8_t>(bytes.at(i));
+    }
+
+    Node *base = model->nodeById(node->refBaseNodeId());
+    if (!base) base = model->root();
+    if (!base) return {};
+
+    const qint64 relative = static_cast<qint64>(stored) + node->refConstantOffset();
+    const qint64 absolute = base->absoluteStart() + relative;
+
+    if (absolute < 0 || absolute >= doc->size())
+        return {};
+
+    return { true, absolute, relative };
 }

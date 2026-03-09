@@ -29,6 +29,7 @@ signals:
     void nodeSelected(Node *node);
     void selectBytesRequested(qint64 absStart, qint64 absEnd);
     void deleteSelectedNodeRequested();
+    void followReferenceRequested(qint64 absOffset);
 
 private slots:
     void onTreeSelectionChanged();
@@ -54,6 +55,15 @@ private:
     QPushButton  *m_deleteNodeBtn  = nullptr;
     QLabel       *m_valueLabel     = nullptr;
 
+    // Reference-type-specific widgets (hidden unless type == Reference)
+    QWidget      *m_refWidget        = nullptr;
+    QComboBox    *m_refBaseCombo     = nullptr;
+    QLineEdit    *m_refOffsetEdit    = nullptr;
+    QLabel       *m_refRelLabel      = nullptr;
+    QLabel       *m_refAbsLabel      = nullptr;  // clickable link
+    QLabel       *m_refNodeRowLabel  = nullptr;  // "REFERENCED NODE" form label, shown/hidden
+    QLabel       *m_refNodeLabel     = nullptr;  // clickable link, shown when a node starts there
+
     void setupUi();
     static QWidget *makePanelHeader(const QString &text, QWidget *parent = nullptr);
 
@@ -65,4 +75,5 @@ private:
 
     void showDetails(Node *node);
     void updateColorButton();
+    void updateRefDisplay();
 };
