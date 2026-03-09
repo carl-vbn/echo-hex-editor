@@ -40,6 +40,8 @@ add_executable(echohexedit
     src/ui/hexview.h
     src/ui/parsedview.cpp
     src/ui/parsedview.h
+    src/ui/messagebox.cpp
+    src/ui/messagebox.h
 
     src/ui/panels/leftpanel.cpp
     src/ui/panels/leftpanel.h

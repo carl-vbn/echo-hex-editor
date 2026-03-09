@@ -24,7 +24,7 @@
 #include <QWindow>
 #include <QApplication>
 #include <QFileDialog>
-#include <QMessageBox>
+#include "messagebox.h"
 #include <QFile>
 #include <QSaveFile>
 #include <QFileInfo>
@@ -402,14 +402,14 @@ void MainWindow::runParser(Parser& parser)
     if (!doc || doc->size() == 0) return;
 
     if (!parser.checkCompatibility(*doc)) {
-        QMessageBox::warning(this, "Parse Failed",
+        MessageBox::warning(this, "Parse Failed",
             QString("File does not appear to be a valid %1 file.").arg(parser.name()));
         return;
     }
 
     NodeModel *parsed = parser.parse(*doc);
     if (!parsed) {
-        QMessageBox::warning(this, "Parse Failed", 
+        MessageBox::warning(this, "Parse Failed", 
             QString("Failed to parse %1 file.").arg(parser.name()));
         return;
     }
@@ -426,7 +426,7 @@ void MainWindow::openFile(const QString &path)
 {
     QFile f(path);
     if (!f.open(QIODevice::ReadOnly)) {
-        QMessageBox::critical(this, "Open Failed",
+        MessageBox::critical(this, "Open Failed",
             QString("Could not open \"%1\":\n%2").arg(path, f.errorString()));
         return;
     }
@@ -444,10 +444,10 @@ void MainWindow::openFile(const QString &path)
     // Check all known parsers and prompt if one recognises the file
     Document *doc = m_centerPanel->document();
     BmpParser bmpParser;
-    Parser *parsers[] = { &bmpParser };
+    Parser *parsers[] = { &bmpParser }; // Temp
     for (Parser *p : parsers) {
         if (p->checkCompatibility(*doc)) {
-            const auto btn = QMessageBox::question(this, "Parse File",
+            const auto btn = MessageBox::question(this, "Parse File",
                 QString("This file appears to be a '%1' file. Do you want to run the associated parser?").arg(p->name()));
             if (btn == QMessageBox::Yes)
                 runParser(*p);
@@ -515,7 +515,7 @@ bool MainWindow::maybeSaveChanges()
     if (!doc->isModified() || m_currentFilePath.isEmpty()) return true;
 
     const QString name = QFileInfo(m_currentFilePath).fileName();
-    const auto btn = QMessageBox::question(this, "Unsaved Changes",
+    const auto btn = MessageBox::question(this, "Unsaved Changes",
         QString("Save changes to \"%1\"?").arg(name),
         QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel);
 
@@ -534,7 +534,7 @@ bool MainWindow::saveToPath(const QString &path)
 
     QSaveFile f(path);
     if (!f.open(QIODevice::WriteOnly)) {
-        QMessageBox::critical(this, "Save Failed",
+        MessageBox::critical(this, "Save Failed",
             QString("Could not write to \"%1\":\n%2").arg(path, f.errorString()));
         return false;
     }
@@ -542,7 +542,7 @@ bool MainWindow::saveToPath(const QString &path)
     f.write(doc->read(0, doc->size()));
 
     if (!f.commit()) {
-        QMessageBox::critical(this, "Save Failed",
+        MessageBox::critical(this, "Save Failed",
             QString("Could not commit \"%1\":\n%2").arg(path, f.errorString()));
         return false;
     }
